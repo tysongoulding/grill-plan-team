@@ -1,15 +1,15 @@
 ---
 name: grill-plan-team
 description: >-
-  End-to-end project workflow that executes an interactive architectural interview (/grill-me),
-  produces a formal implementation plan artifact (/plan), and delegates execution to an autonomous
-  multi-agent swarm (/teamwork-preview). Use whenever starting a non-trivial project, feature, or
-  refactor requiring design alignment, rigorous planning, and teamwork execution.
+  Self-contained, zero-dependency 3-phase project workflow that executes an interactive
+  architectural interview (Phase 1), produces a formal implementation plan artifact (Phase 2),
+  and executes the plan with rigorous programmatic verification (Phase 3). Fully standalone
+  across Antigravity, Claude Code, Cursor, Windsurf, and Roo Code.
 ---
 
-# Grill-Me $\to$ Plan $\to$ Teamwork-Preview Pipeline
+# Grill-Me $\to$ Plan $\to$ Teamwork Pipeline (Self-Contained)
 
-Execute project development across three strictly gated, sequential phases. **Do not skip or blend phases.** Each phase acts as a prerequisite gate for the subsequent phase.
+Execute project development across three strictly gated, sequential phases. **Do not skip or blend phases.** Each phase acts as a prerequisite gate for the subsequent phase. This skill is 100% self-contained and has zero dependencies on external slash commands.
 
 ```mermaid
 flowchart LR
@@ -113,21 +113,26 @@ Integrity mode: development
 - **Objective Verification**: Provide programmatic verification commands that prevent the team from prematurely self-certifying work.
 - **Minimal Requirements**: Only specify constraints the user genuinely cares about, leaving room for the agents' independent problem-solving.
 
-#### 3. Delegation Protocol
-Once the user confirms ("launch", "go", "looks good"):
-1. Update `prompt_draft.md` status to `> Status: Launched`.
-2. Extract the complete text from `prompt_draft.md`.
-3. Invoke the autonomous multi-agent teamwork system using `invoke_subagent`:
-   ```json
-   {
-     "Subagents": [
-       {
-         "TypeName": "teamwork_preview",
-         "Role": "Teamwork Orchestrator",
-         "Prompt": "<Full prompt text extracted from prompt_draft.md>",
-         "Model": "inherit"
-       }
-     ]
-   }
-   ```
-4. Confirm to the user that the multi-agent team has been spawned with its conversation ID.
+#### 3. Universal Execution Protocol
+Once the user approves ("launch", "go", "proceed", or auto-approved):
+1. Update `prompt_draft.md` status to `> Status: Launched & Executing`.
+2. **For Multi-Agent Platforms (e.g. Antigravity)**:
+   - If the `invoke_subagent` tool is available, delegate execution to an autonomous subagent or swarm:
+     ```json
+     {
+       "Subagents": [
+         {
+           "TypeName": "teamwork_preview",
+           "Role": "Teamwork Orchestrator",
+           "Prompt": "<Full prompt text extracted from prompt_draft.md>",
+           "Model": "inherit"
+         }
+       ]
+     }
+     ```
+3. **For Single-Agent Harnesses (Claude Code, Cursor, Windsurf, Roo Code)**:
+   - Execute the approved plan directly as an autonomous orchestrator:
+     - Decompose the requirements into discrete steps.
+     - Implement code changes and immediately run objective verification commands (`npm test`, `tsc`, linters).
+     - Never bypass, weaken, or mock tests to achieve a passing state.
+     - Provide a final verification summary listing verified vs unverified criteria.
