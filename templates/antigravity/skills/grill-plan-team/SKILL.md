@@ -139,7 +139,8 @@ Integrity mode: development
 Once the user approves ("launch", "go", "proceed", or auto-approved):
 1. Update `prompt_draft.md` status to `> Status: Launched & Executing`.
 2. **For Multi-Agent Platforms (e.g. Antigravity)**:
-   - If the `invoke_subagent` tool is available, delegate execution to an autonomous subagent or swarm:
+   - If the `invoke_subagent` tool is available, delegate execution to an autonomous subagent or swarm.
+   - **IMPORTANT**: In Antigravity, `teamwork_preview` is a pre-defined built-in subagent (hidden from the static subagents list). **DO NOT call `define_subagent`**. Call `invoke_subagent` directly:
      ```json
      {
        "Subagents": [
@@ -152,6 +153,7 @@ Once the user approves ("launch", "go", "proceed", or auto-approved):
        ]
      }
      ```
+   - If `teamwork_preview` is not available or rejected, fall back to `TypeName: "self"` with the same prompt.
 3. **For Single-Agent Harnesses (Claude Code, Cursor, Windsurf, Roo Code)**:
    - Execute the approved plan directly as an autonomous orchestrator:
      - Decompose the requirements into discrete steps.

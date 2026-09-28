@@ -47,7 +47,7 @@ flowchart LR
   - Behavioral Requirements (R1, R2, ...)
   - Objective, programmatic Acceptance Criteria with checkboxes
 - **Rule 2 — Teamwork Principles**: Specify *what*, not *how*. Provide programmatic verification commands. Avoid micromanaging implementation details.
-- **Rule 3 — Delegation Protocol**: Once the user confirms ("launch", "go", "approved"), update status to `Launched`, extract the prompt, and invoke the autonomous multi-agent swarm (`invoke_subagent` with `TypeName: teamwork_preview`).
+- **Rule 3 — Delegation Protocol**: Once the user confirms ("launch", "go", "approved"), update status to `Launched`, extract the prompt, and invoke the autonomous multi-agent swarm (`invoke_subagent` with `TypeName: teamwork_preview`). **Do NOT call `define_subagent`**; `teamwork_preview` is a pre-registered built-in subagent. On single-agent harnesses, execute the plan directly as the lead orchestrator.
 
 ### 4. Phase 4: Reflection & Distillation Loop
 - **Goal**: Persist learnings from interview choices, architectural outcomes, and test results back into memory.
