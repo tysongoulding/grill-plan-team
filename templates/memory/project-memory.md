@@ -5,7 +5,7 @@ Repository-specific context, conventions, architectural decisions, and learned l
 ## Project Archetype & Domain Terminology
 - Archetype: Cross-harness AI agent workflow engine and installer CLI.
 - Domain terms:
-  - Harness: Target IDE or coding agent host (Antigravity, Claude Code, Cursor, Windsurf, Roo Code).
+  - Harness: Target IDE or coding agent host (Antigravity, Claude Code, Cursor, Windsurf, Roo Code, Kimi Code, Hermes Agent, Pi Agent, Oh My Pi, OpenCode, Codex, Grok Build).
   - 3-Phase Gate: Grill-Me (interview) -> Plan (blueprint) -> Teamwork (execution).
   - Two-Tier Memory: Global user profile (~/.config/grill-plan-team) + local project memory (.grill-plan-team).
 

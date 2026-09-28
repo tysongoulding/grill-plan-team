@@ -4,8 +4,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Agent working metadata & scratch
-.agents/
+.agents/*
+!.agents/skills/
+
 
 # Environment files
 .env

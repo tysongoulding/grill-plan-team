@@ -552,7 +552,7 @@ Options:
   --global, -g          Install to user-level global configuration directories (default)
   --local, -l [path]    Install to project repository at [path] (default: current directory)
   --all, -a             Install to all supported harnesses regardless of host detection
-  --harness <name>      Target specific harness(es): antigravity, claude, cursor, windsurf, roo
+  --harness <name>      Target specific harness(es): antigravity, claude, cursor, windsurf, roo, kimi, hermes, pi, omp, opencode, codex, grok
   --uninstall, -u       Cleanly remove installed grill-plan-team configurations
   --purge               Purge persistent memory files when uninstalling
   --dry-run, -d         Preview changes without modifying the filesystem
@@ -570,6 +570,13 @@ Supported Harnesses:
   * cursor        Cursor (.cursorrules and .cursor/rules/grill-plan-team.mdc)
   * windsurf      Windsurf Cascade (.windsurfrules)
   * roo           Roo Code / Cline (.roomodes and .clinerules)
+  * kimi          Kimi Code (~/.kimi/skills/grill-plan-team)
+  * hermes        Hermes Agent (~/.hermes/skills/grill-plan-team)
+  * pi            Pi Agent (~/.pi/agent/skills/grill-plan-team)
+  * omp           Oh My Pi (~/.omp/skills/grill-plan-team)
+  * opencode      OpenCode (~/.config/opencode/skills/grill-plan-team)
+  * codex         Codex (~/.codex/skills/grill-plan-team)
+  * grok          Grok Build (~/.grok/skills/grill-plan-team)
 EOF
 }
 
@@ -704,11 +711,46 @@ if [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
           VALID_REQUESTED_HARNESSES+=("roo")
         fi
         ;;
+      kimi|kimi-code)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " kimi " ]]; then
+          VALID_REQUESTED_HARNESSES+=("kimi")
+        fi
+        ;;
+      hermes|hermes-agent)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " hermes " ]]; then
+          VALID_REQUESTED_HARNESSES+=("hermes")
+        fi
+        ;;
+      pi|pi-agent)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " pi " ]]; then
+          VALID_REQUESTED_HARNESSES+=("pi")
+        fi
+        ;;
+      omp|oh-my-pi)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " omp " ]]; then
+          VALID_REQUESTED_HARNESSES+=("omp")
+        fi
+        ;;
+      opencode)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " opencode " ]]; then
+          VALID_REQUESTED_HARNESSES+=("opencode")
+        fi
+        ;;
+      codex|openai-codex)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " codex " ]]; then
+          VALID_REQUESTED_HARNESSES+=("codex")
+        fi
+        ;;
+      grok|grok-build)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " grok " ]]; then
+          VALID_REQUESTED_HARNESSES+=("grok")
+        fi
+        ;;
       *) echo "Warning: Unknown harness '$h' ignored." >&2 ;;
     esac
   done
   if [ ${#VALID_REQUESTED_HARNESSES[@]} -eq 0 ]; then
-    echo "Error: No valid harnesses specified. Choose from: antigravity, claude, cursor, windsurf, roo" >&2
+    echo "Error: No valid harnesses specified. Choose from: antigravity, claude, cursor, windsurf, roo, kimi, hermes, pi, omp, opencode, codex, grok" >&2
     exit 1
   fi
 fi
@@ -732,6 +774,34 @@ has_windsurf() {
 
 has_roo() {
   [ -f "$HOME/.roomodes" ] || [ -f "$HOME/.clinerules" ] || [ -d "$HOME/.config/Code/User/globalStorage/rooveterinaryinc.roo-cline" ]
+}
+
+has_kimi() {
+  [ -d "$HOME/.kimi" ] || command -v kimi >/dev/null 2>&1
+}
+
+has_hermes() {
+  [ -d "$HOME/.hermes" ] || command -v hermes >/dev/null 2>&1
+}
+
+has_pi() {
+  [ -d "$HOME/.pi" ] || command -v pi >/dev/null 2>&1
+}
+
+has_omp() {
+  [ -d "$HOME/.omp" ] || command -v omp >/dev/null 2>&1
+}
+
+has_opencode() {
+  [ -d "$HOME/.config/opencode" ] || [ -d "$HOME/.opencode" ] || command -v opencode >/dev/null 2>&1
+}
+
+has_codex() {
+  [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1
+}
+
+has_grok() {
+  [ -d "$HOME/.grok" ] || command -v grok >/dev/null 2>&1
 }
 
 write_file_safe() {
@@ -874,7 +944,7 @@ update_manifest_on_uninstall() {
     else
       local rem_harnesses=()
       local rem_files=()
-      for eh in antigravity claude cursor windsurf roo; do
+      for eh in antigravity claude cursor windsurf roo kimi hermes pi omp opencode codex grok; do
         if grep -q "\"$eh\"" "$manifest_path"; then
           local keep=1
           for uh in "${uninstalled_harnesses[@]}"; do
@@ -961,7 +1031,7 @@ save_installation_manifest() {
           if [ "$already" -eq 0 ]; then all_files+=("$f"); fi
         fi
       done < <(grep -o '"/[^"]*"' "$manifest_path" | tr -d '"')
-      for h in antigravity claude cursor windsurf roo; do
+      for h in antigravity claude cursor windsurf roo kimi hermes pi omp opencode codex grok; do
         if grep -q "\"$h\"" "$manifest_path"; then
           local already=0
           for ah in "${all_harnesses[@]}"; do if [ "$ah" = "$h" ]; then already=1; break; fi; done
@@ -1005,7 +1075,7 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
   if [ ${#VALID_REQUESTED_HARNESSES[@]} -gt 0 ]; then
     UNINSTALL_HARNESSES=("${VALID_REQUESTED_HARNESSES[@]}")
   else
-    UNINSTALL_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
+    UNINSTALL_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo" "kimi" "hermes" "pi" "omp" "opencode" "codex" "grok")
   fi
 
   declare -a UNINSTALL_FILES=()
@@ -1052,8 +1122,120 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
           "${TARGET_DIR}/.clinerules"
         )
         ;;
+      kimi)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.kimi/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.kimi/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
+      hermes)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.hermes/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.hermes/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
+      pi)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.pi/agent/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.pi/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.pi/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
+      omp)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.omp/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.omp/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
+      opencode)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.config/opencode/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.opencode/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.opencode/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
+      codex)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.codex/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.codex/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
+      grok)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.grok/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.grok/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
     esac
   done
+
+  # If selective uninstallation, preserve .agents/skills if another agent harness is still installed
+  if [ ${#VALID_REQUESTED_HARNESSES[@]} -gt 0 ] && [ -f "$MANIFEST_PATH" ]; then
+    keep_agents=0
+    for ah in kimi hermes pi omp opencode codex grok; do
+      if grep -q "\"$ah\"" "$MANIFEST_PATH"; then
+        ah_uninstalled=0
+        for uh in "${UNINSTALL_HARNESSES[@]}"; do
+          if [ "$uh" = "$ah" ]; then ah_uninstalled=1; break; fi
+        done
+        if [ "$ah_uninstalled" -eq 0 ]; then
+          keep_agents=1
+          break
+        fi
+      fi
+    done
+    if [ "$keep_agents" -eq 1 ]; then
+      filtered_uninstall_files=()
+      for f in "${UNINSTALL_FILES[@]}"; do
+        if [ "$f" != "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" ]; then
+          filtered_uninstall_files+=("$f")
+        fi
+      done
+      UNINSTALL_FILES=("${filtered_uninstall_files[@]}")
+    fi
+  fi
 
   REMOVED_COUNT=0
   for f in "${UNINSTALL_FILES[@]}"; do
@@ -1105,6 +1287,44 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
     rmdir "${TARGET_DIR}/skills" 2>/dev/null || true
     rmdir "${TARGET_DIR}/rules" 2>/dev/null || true
 
+    rmdir "${TARGET_DIR}/.agents/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.agents/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.agents" 2>/dev/null || true
+
+    rmdir "${TARGET_DIR}/.kimi/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.kimi/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.kimi" 2>/dev/null || true
+
+    rmdir "${TARGET_DIR}/.hermes/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.hermes/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.hermes" 2>/dev/null || true
+
+    rmdir "${TARGET_DIR}/.pi/agent/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.pi/agent/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.pi/agent" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.pi/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.pi/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.pi" 2>/dev/null || true
+
+    rmdir "${TARGET_DIR}/.omp/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.omp/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.omp" 2>/dev/null || true
+
+    rmdir "${TARGET_DIR}/.config/opencode/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.config/opencode/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.config/opencode" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.opencode/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.opencode/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.opencode" 2>/dev/null || true
+
+    rmdir "${TARGET_DIR}/.codex/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.codex/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.codex" 2>/dev/null || true
+
+    rmdir "${TARGET_DIR}/.grok/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.grok/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.grok" 2>/dev/null || true
+
     for uh in "${UNINSTALL_HARNESSES[@]}"; do
       if [ "$uh" = "antigravity" ] && [ "$IS_GLOBAL" -eq 1 ]; then
         update_plugins_json "$TARGET_DIR" "remove"
@@ -1149,10 +1369,19 @@ if has_claude; then DETECTED+=("claude"); fi
 if has_cursor; then DETECTED+=("cursor"); fi
 if has_windsurf; then DETECTED+=("windsurf"); fi
 if has_roo; then DETECTED+=("roo"); fi
+if has_kimi; then DETECTED+=("kimi"); fi
+if has_hermes; then DETECTED+=("hermes"); fi
+if has_pi; then DETECTED+=("pi"); fi
+if has_omp; then DETECTED+=("omp"); fi
+if has_opencode; then DETECTED+=("opencode"); fi
+if has_codex; then DETECTED+=("codex"); fi
+if has_grok; then DETECTED+=("grok"); fi
 
 SELECTED_HARNESSES=()
+ALL_HARNESSES_LIST=("antigravity" "claude" "cursor" "windsurf" "roo" "kimi" "hermes" "pi" "omp" "opencode" "codex" "grok")
+
 if [ "$ALL_HARNESSES" -eq 1 ]; then
-  SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
+  SELECTED_HARNESSES=("${ALL_HARNESSES_LIST[@]}")
 elif [ ${#VALID_REQUESTED_HARNESSES[@]} -gt 0 ]; then
   SELECTED_HARNESSES=("${VALID_REQUESTED_HARNESSES[@]}")
 elif [ "$INTERACTIVE" -eq 1 ]; then
@@ -1164,32 +1393,46 @@ elif [ "$INTERACTIVE" -eq 1 ]; then
     echo "  3) Cursor"
     echo "  4) Windsurf"
     echo "  5) Roo Code / Cline"
+    echo "  6) Kimi Code"
+    echo "  7) Hermes Agent"
+    echo "  8) Pi Agent"
+    echo "  9) Oh My Pi"
+    echo " 10) OpenCode"
+    echo " 11) Codex"
+    echo " 12) Grok Build"
     echo "  A) All harnesses"
     echo "  D) Detected harnesses only"
     read -r -p "Enter choice [D]: " choice
     choice="$(echo "$choice" | tr '[:lower:]' '[:upper:]')"
     case "$choice" in
-      A) SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo") ;;
+      A) SELECTED_HARNESSES=("${ALL_HARNESSES_LIST[@]}") ;;
       1) SELECTED_HARNESSES=("antigravity") ;;
       2) SELECTED_HARNESSES=("claude") ;;
       3) SELECTED_HARNESSES=("cursor") ;;
       4) SELECTED_HARNESSES=("windsurf") ;;
       5) SELECTED_HARNESSES=("roo") ;;
-      *) SELECTED_HARNESSES=("${DETECTED[@]:-antigravity}") ;;
+      6) SELECTED_HARNESSES=("kimi") ;;
+      7) SELECTED_HARNESSES=("hermes") ;;
+      8) SELECTED_HARNESSES=("pi") ;;
+      9) SELECTED_HARNESSES=("omp") ;;
+      10) SELECTED_HARNESSES=("opencode") ;;
+      11) SELECTED_HARNESSES=("codex") ;;
+      12) SELECTED_HARNESSES=("grok") ;;
+      *) SELECTED_HARNESSES=("${DETECTED[@]:-${ALL_HARNESSES_LIST[@]}}") ;;
     esac
   else
     echo "Warning: Interactive mode requested but stdin is not a TTY. Falling back to auto-detection." >&2
     if [ ${#DETECTED[@]} -gt 0 ]; then
       SELECTED_HARNESSES=("${DETECTED[@]}")
     else
-      SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
+      SELECTED_HARNESSES=("${ALL_HARNESSES_LIST[@]}")
     fi
   fi
 else
   if [ ${#DETECTED[@]} -gt 0 ]; then
     SELECTED_HARNESSES=("${DETECTED[@]}")
   else
-    SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
+    SELECTED_HARNESSES=("${ALL_HARNESSES_LIST[@]}")
   fi
 fi
 
@@ -1250,6 +1493,76 @@ for h in "${SELECTED_HARNESSES[@]}"; do
       CONTENT_RULES="$(get_file_content "roo/.clinerules")"
       write_file_safe "${TARGET_DIR}/.roomodes" "$CONTENT_MODES"
       write_file_safe "${TARGET_DIR}/.clinerules" "$CONTENT_RULES"
+      ;;
+
+    kimi)
+      CONTENT_SKILL="$(get_file_content "kimi/skills/grill-plan-team/SKILL.md")"
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        write_file_safe "${TARGET_DIR}/.kimi/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      else
+        write_file_safe "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+        write_file_safe "${TARGET_DIR}/.kimi/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      fi
+      ;;
+
+    hermes)
+      CONTENT_SKILL="$(get_file_content "hermes/skills/grill-plan-team/SKILL.md")"
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        write_file_safe "${TARGET_DIR}/.hermes/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      else
+        write_file_safe "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+        write_file_safe "${TARGET_DIR}/.hermes/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      fi
+      ;;
+
+    pi)
+      CONTENT_SKILL="$(get_file_content "pi/skills/grill-plan-team/SKILL.md")"
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        write_file_safe "${TARGET_DIR}/.pi/agent/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      else
+        write_file_safe "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+        write_file_safe "${TARGET_DIR}/.pi/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      fi
+      ;;
+
+    omp)
+      CONTENT_SKILL="$(get_file_content "omp/skills/grill-plan-team/SKILL.md")"
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        write_file_safe "${TARGET_DIR}/.omp/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      else
+        write_file_safe "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+        write_file_safe "${TARGET_DIR}/.omp/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      fi
+      ;;
+
+    opencode)
+      CONTENT_SKILL="$(get_file_content "opencode/skills/grill-plan-team/SKILL.md")"
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        write_file_safe "${TARGET_DIR}/.config/opencode/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      else
+        write_file_safe "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+        write_file_safe "${TARGET_DIR}/.opencode/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      fi
+      ;;
+
+    codex)
+      CONTENT_SKILL="$(get_file_content "codex/skills/grill-plan-team/SKILL.md")"
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        write_file_safe "${TARGET_DIR}/.codex/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      else
+        write_file_safe "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+        write_file_safe "${TARGET_DIR}/.codex/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      fi
+      ;;
+
+    grok)
+      CONTENT_SKILL="$(get_file_content "grok/skills/grill-plan-team/SKILL.md")"
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        write_file_safe "${TARGET_DIR}/.grok/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      else
+        write_file_safe "${TARGET_DIR}/.agents/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+        write_file_safe "${TARGET_DIR}/.grok/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
+      fi
       ;;
   esac
 done

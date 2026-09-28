@@ -76,4 +76,12 @@ If the user asks to `remove` or `uninstall` this workflow/skill (e.g. `uninstall
    - Cursor: `rm -rf ~/.cursor/rules/grill-plan-team.mdc ~/.cursorrules ~/.cursor/skills/grill-plan-team`
    - Windsurf: `rm -f .windsurfrules`
    - Roo Code: `rm -f .roomodes .clinerules`
+   - Kimi Code: `rm -rf ~/.kimi/skills/grill-plan-team`
+   - Hermes Agent: `rm -rf ~/.hermes/skills/grill-plan-team`
+   - Pi Agent: `rm -rf ~/.pi/agent/skills/grill-plan-team`
+   - Oh My Pi: `rm -rf ~/.omp/skills/grill-plan-team`
+   - OpenCode: `rm -rf ~/.config/opencode/skills/grill-plan-team`
+   - Codex: `rm -rf ~/.codex/skills/grill-plan-team`
+   - Grok Build: `rm -rf ~/.grok/skills/grill-plan-team`
+   - Universal Local: `rm -rf .agents/skills/grill-plan-team`
 3. Confirm uninstallation to the user once completed.

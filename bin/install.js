@@ -16,14 +16,34 @@ const PKG_ROOT = path.resolve(__dirname, '..');
 const TEMPLATES_DIR = path.join(PKG_ROOT, 'templates');
 const MANIFEST_FILENAME = '.grill-plan-team-manifest.json';
 
-const HARNESSES = ['antigravity', 'claude', 'cursor', 'windsurf', 'roo'];
+const HARNESSES = [
+  'antigravity',
+  'claude',
+  'cursor',
+  'windsurf',
+  'roo',
+  'kimi',
+  'hermes',
+  'pi',
+  'omp',
+  'opencode',
+  'codex',
+  'grok'
+];
 
 const HARNESS_DISPLAY_NAMES = {
   antigravity: 'Antigravity / Gemini CLI',
   claude: 'Claude Code',
   cursor: 'Cursor',
   windsurf: 'Windsurf',
-  roo: 'Roo Code / Cline'
+  roo: 'Roo Code / Cline',
+  kimi: 'Kimi Code',
+  hermes: 'Hermes Agent',
+  pi: 'Pi Agent',
+  omp: 'Oh My Pi',
+  opencode: 'OpenCode',
+  codex: 'Codex',
+  grok: 'Grok Build'
 };
 
 const DEFAULT_USER_MEMORY = `# Global User Memory (grill-plan-team)
@@ -56,7 +76,7 @@ Repository-specific context, conventions, architectural decisions, and learned l
 ## Project Archetype & Domain Terminology
 - Archetype: Cross-harness AI agent workflow engine and installer CLI.
 - Domain terms:
-  - Harness: Target IDE or coding agent host (Antigravity, Claude Code, Cursor, Windsurf, Roo Code).
+  - Harness: Target IDE or coding agent host (Antigravity, Claude Code, Cursor, Windsurf, Roo Code, Kimi Code, Hermes Agent, Pi Agent, Oh My Pi, OpenCode, Codex, Grok Build).
   - 3-Phase Gate: Grill-Me (interview) -> Plan (blueprint) -> Teamwork (execution).
   - Two-Tier Memory: Global user profile (~/.config/grill-plan-team) + local project memory (.grill-plan-team).
 
@@ -656,6 +676,12 @@ function parseArgs(args) {
     if (h === 'agy' || h === 'gemini') return 'antigravity';
     if (h === 'claude-code') return 'claude';
     if (h === 'cline' || h === 'roo-code') return 'roo';
+    if (h === 'kimi-code') return 'kimi';
+    if (h === 'hermes-agent') return 'hermes';
+    if (h === 'pi-agent') return 'pi';
+    if (h === 'oh-my-pi') return 'omp';
+    if (h === 'openai-codex') return 'codex';
+    if (h === 'grok-build') return 'grok';
     return h;
   });
   options.harnesses = Array.from(new Set(options.harnesses));
@@ -680,7 +706,8 @@ Options:
   --local, -l [path]    Install to project repository at [path] (default: current directory)
   --all, -a             Install to all supported harnesses regardless of host detection
   --harness <name>      Comma-separated list of target harnesses:
-                        antigravity, claude, cursor, windsurf, roo
+                        antigravity, claude, cursor, windsurf, roo,
+                        kimi, hermes, pi, omp, opencode, codex, grok
   --uninstall, -u       Cleanly remove installed grill-plan-team configurations
   --purge               Purge persistent memory files when uninstalling
   --dry-run, -d         Preview changes without writing any files
@@ -698,6 +725,13 @@ Supported Harnesses:
   * cursor        Cursor (.cursorrules and .cursor/rules/grill-plan-team.mdc)
   * windsurf      Windsurf Cascade (.windsurfrules)
   * roo           Roo Code / Cline (.roomodes and .clinerules)
+  * kimi          Kimi Code (~/.kimi/skills/grill-plan-team)
+  * hermes        Hermes Agent (~/.hermes/skills/grill-plan-team)
+  * pi            Pi Agent (~/.pi/agent/skills/grill-plan-team)
+  * omp           Oh My Pi (~/.omp/skills/grill-plan-team)
+  * opencode      OpenCode (~/.config/opencode/skills/grill-plan-team)
+  * codex         Codex (~/.codex/skills/grill-plan-team)
+  * grok          Grok Build (~/.grok/skills/grill-plan-team)
 `);
 }
 
@@ -755,6 +789,63 @@ function detectInstalledHarnesses(homeDir) {
     fs.existsSync(path.join(homeDir, '.config', 'Code', 'User', 'globalStorage', 'rooveterinaryinc.roo-cline'))
   ) {
     detected.push('roo');
+  }
+
+  // Kimi Code
+  if (
+    commandExists('kimi') ||
+    fs.existsSync(path.join(homeDir, '.kimi'))
+  ) {
+    detected.push('kimi');
+  }
+
+  // Hermes Agent
+  if (
+    commandExists('hermes') ||
+    fs.existsSync(path.join(homeDir, '.hermes'))
+  ) {
+    detected.push('hermes');
+  }
+
+  // Pi Agent
+  if (
+    commandExists('pi') ||
+    fs.existsSync(path.join(homeDir, '.pi'))
+  ) {
+    detected.push('pi');
+  }
+
+  // Oh My Pi
+  if (
+    commandExists('omp') ||
+    fs.existsSync(path.join(homeDir, '.omp'))
+  ) {
+    detected.push('omp');
+  }
+
+  // OpenCode
+  if (
+    commandExists('opencode') ||
+    fs.existsSync(path.join(homeDir, '.config', 'opencode')) ||
+    fs.existsSync(path.join(homeDir, '.opencode'))
+  ) {
+    detected.push('opencode');
+  }
+
+  // Codex
+  if (
+    commandExists('codex') ||
+    fs.existsSync(path.join(homeDir, '.codex'))
+  ) {
+    detected.push('codex');
+  }
+
+  // Grok Build
+  if (
+    commandExists('grok') ||
+    fs.existsSync(path.join(homeDir, '.grok'))
+  ) {
+    detected.push('grok');
   }
 
   return detected;
@@ -863,6 +954,132 @@ function getHarnessFileMappings(harness, baseDir, isGlobal) {
         target: path.join(baseDir, '.clinerules'),
         content: getTemplateContent('roo/.clinerules')
       });
+      break;
+
+    case 'kimi':
+      if (isGlobal) {
+        mappings.push({
+          target: path.join(baseDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('kimi/skills/grill-plan-team/SKILL.md')
+        });
+      } else {
+        mappings.push({
+          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('kimi/skills/grill-plan-team/SKILL.md')
+        });
+        mappings.push({
+          target: path.join(baseDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('kimi/skills/grill-plan-team/SKILL.md')
+        });
+      }
+      break;
+
+    case 'hermes':
+      if (isGlobal) {
+        mappings.push({
+          target: path.join(baseDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('hermes/skills/grill-plan-team/SKILL.md')
+        });
+      } else {
+        mappings.push({
+          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('hermes/skills/grill-plan-team/SKILL.md')
+        });
+        mappings.push({
+          target: path.join(baseDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('hermes/skills/grill-plan-team/SKILL.md')
+        });
+      }
+      break;
+
+    case 'pi':
+      if (isGlobal) {
+        mappings.push({
+          target: path.join(baseDir, '.pi', 'agent', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('pi/skills/grill-plan-team/SKILL.md')
+        });
+      } else {
+        mappings.push({
+          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('pi/skills/grill-plan-team/SKILL.md')
+        });
+        mappings.push({
+          target: path.join(baseDir, '.pi', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('pi/skills/grill-plan-team/SKILL.md')
+        });
+      }
+      break;
+
+    case 'omp':
+      if (isGlobal) {
+        mappings.push({
+          target: path.join(baseDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('omp/skills/grill-plan-team/SKILL.md')
+        });
+      } else {
+        mappings.push({
+          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('omp/skills/grill-plan-team/SKILL.md')
+        });
+        mappings.push({
+          target: path.join(baseDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('omp/skills/grill-plan-team/SKILL.md')
+        });
+      }
+      break;
+
+    case 'opencode':
+      if (isGlobal) {
+        mappings.push({
+          target: path.join(baseDir, '.config', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('opencode/skills/grill-plan-team/SKILL.md')
+        });
+      } else {
+        mappings.push({
+          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('opencode/skills/grill-plan-team/SKILL.md')
+        });
+        mappings.push({
+          target: path.join(baseDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('opencode/skills/grill-plan-team/SKILL.md')
+        });
+      }
+      break;
+
+    case 'codex':
+      if (isGlobal) {
+        mappings.push({
+          target: path.join(baseDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('codex/skills/grill-plan-team/SKILL.md')
+        });
+      } else {
+        mappings.push({
+          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('codex/skills/grill-plan-team/SKILL.md')
+        });
+        mappings.push({
+          target: path.join(baseDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('codex/skills/grill-plan-team/SKILL.md')
+        });
+      }
+      break;
+
+    case 'grok':
+      if (isGlobal) {
+        mappings.push({
+          target: path.join(baseDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('grok/skills/grill-plan-team/SKILL.md')
+        });
+      } else {
+        mappings.push({
+          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('grok/skills/grill-plan-team/SKILL.md')
+        });
+        mappings.push({
+          target: path.join(baseDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md'),
+          content: getTemplateContent('grok/skills/grill-plan-team/SKILL.md')
+        });
+      }
       break;
   }
 
@@ -1044,6 +1261,15 @@ async function run(cliArgs = process.argv.slice(2)) {
       }
     }
 
+    // If selective uninstallation, preserve .agents/skills if another agent harness is still installed
+    if (options.harnesses.length > 0 && fs.existsSync(manifestPath)) {
+      const remainingHarnesses = (manifest.harnesses || []).filter(h => !targetHarnesses.includes(h));
+      const agentHarnesses = ['kimi', 'hermes', 'pi', 'omp', 'opencode', 'codex', 'grok'];
+      if (remainingHarnesses.some(h => agentHarnesses.includes(h))) {
+        filesToRemove.delete(path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'));
+      }
+    }
+
     let removedCount = 0;
     for (const file of filesToRemove) {
       if (fs.existsSync(file)) {
@@ -1078,7 +1304,37 @@ async function run(cliArgs = process.argv.slice(2)) {
       path.join(baseDir, '.cursor'),
       path.join(baseDir, 'skills', 'grill-plan-team'),
       path.join(baseDir, 'skills'),
-      path.join(baseDir, 'rules')
+      path.join(baseDir, 'rules'),
+      path.join(baseDir, '.agents', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.agents', 'skills'),
+      path.join(baseDir, '.agents'),
+      path.join(baseDir, '.kimi', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.kimi', 'skills'),
+      path.join(baseDir, '.kimi'),
+      path.join(baseDir, '.hermes', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.hermes', 'skills'),
+      path.join(baseDir, '.hermes'),
+      path.join(baseDir, '.pi', 'agent', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.pi', 'agent', 'skills'),
+      path.join(baseDir, '.pi', 'agent'),
+      path.join(baseDir, '.pi', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.pi', 'skills'),
+      path.join(baseDir, '.pi'),
+      path.join(baseDir, '.omp', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.omp', 'skills'),
+      path.join(baseDir, '.omp'),
+      path.join(baseDir, '.config', 'opencode', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.config', 'opencode', 'skills'),
+      path.join(baseDir, '.config', 'opencode'),
+      path.join(baseDir, '.opencode', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.opencode', 'skills'),
+      path.join(baseDir, '.opencode'),
+      path.join(baseDir, '.codex', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.codex', 'skills'),
+      path.join(baseDir, '.codex'),
+      path.join(baseDir, '.grok', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.grok', 'skills'),
+      path.join(baseDir, '.grok')
     ];
 
     if (!options.dryRun) {

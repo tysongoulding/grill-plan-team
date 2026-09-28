@@ -125,6 +125,22 @@ describe('Repository Manifest & Schema Integrity', () => {
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'cursor', '.cursorrules')));
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'windsurf', '.windsurfrules')));
     assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'roo', '.roomodes')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'kimi', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'hermes', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'pi', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'omp', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'codex', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'grok', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
+
+    const { HARNESSES, HARNESS_DISPLAY_NAMES } = require('../bin/install.js');
+    assert.strictEqual(HARNESSES.length, 12, 'HARNESSES array contains 12 entries');
+    const expected = ['antigravity', 'claude', 'cursor', 'windsurf', 'roo', 'kimi', 'hermes', 'pi', 'omp', 'opencode', 'codex', 'grok'];
+    assert.deepStrictEqual(HARNESSES, expected);
+    for (const h of expected) {
+      assert.ok(HARNESS_DISPLAY_NAMES[h], `Display name exists for ${h}`);
+    }
   });
 });
 
@@ -151,6 +167,9 @@ describe('Shell Installer (install.sh)', () => {
     assert.ok(res.includes('Grill-Plan-Team Universal Shell Installer'));
     assert.ok(res.includes('--all'));
     assert.ok(res.includes('--harness'));
+    for (const h of ['kimi', 'hermes', 'pi', 'omp', 'opencode', 'codex', 'grok']) {
+      assert.ok(res.includes(h), `Help includes ${h}`);
+    }
   });
 
   test('install.sh --local installs all harnesses with --all flag', () => {
@@ -166,7 +185,18 @@ describe('Shell Installer (install.sh)', () => {
     assert.ok(fs.existsSync(path.join(tmpDir, '.windsurfrules')), 'Windsurf rules installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')), 'Roo modes installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.clinerules')), 'Cline rules installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')), 'Universal .agents skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md')), 'Kimi skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md')), 'Hermes skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.pi', 'skills', 'grill-plan-team', 'SKILL.md')), 'Pi skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md')), 'Oh My Pi skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')), 'OpenCode skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md')), 'Codex skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md')), 'Grok skill installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest created');
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
+    assert.strictEqual(manifest.harnesses.length, 12, 'Manifest records all 12 harnesses');
   });
 
   test('install.sh --local installs only selected harness', () => {
@@ -333,6 +363,9 @@ describe('Node Installer CLI (bin/install.js)', () => {
     assert.ok(res.includes('Grill-Plan-Team Universal Installer'));
     assert.ok(res.includes('--global'));
     assert.ok(res.includes('--local'));
+    for (const h of ['kimi', 'hermes', 'pi', 'omp', 'opencode', 'codex', 'grok']) {
+      assert.ok(res.includes(h), `Help includes ${h}`);
+    }
   });
 
   test('bin/install.js --dry-run does not write files', () => {
@@ -354,6 +387,17 @@ describe('Node Installer CLI (bin/install.js)', () => {
     assert.ok(fs.existsSync(path.join(tmpDir, '.windsurfrules')), 'Windsurf rules installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')), 'Roo modes installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.clinerules')), 'Cline rules installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')), 'Universal .agents skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md')), 'Kimi skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md')), 'Hermes skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.pi', 'skills', 'grill-plan-team', 'SKILL.md')), 'Pi skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md')), 'Oh My Pi skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')), 'OpenCode skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md')), 'Codex skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md')), 'Grok skill installed');
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
+    assert.strictEqual(manifest.harnesses.length, 12, 'Manifest records all 12 harnesses');
   });
 
   test('bin/install.js --uninstall cleanly removes installed files and preserves others', () => {
@@ -562,7 +606,15 @@ describe('Cross-Harness Parity & Byte Integrity', () => {
       '.cursorrules',
       '.windsurfrules',
       '.roomodes',
-      '.clinerules'
+      '.clinerules',
+      '.agents/skills/grill-plan-team/SKILL.md',
+      '.kimi/skills/grill-plan-team/SKILL.md',
+      '.hermes/skills/grill-plan-team/SKILL.md',
+      '.pi/skills/grill-plan-team/SKILL.md',
+      '.omp/skills/grill-plan-team/SKILL.md',
+      '.opencode/skills/grill-plan-team/SKILL.md',
+      '.codex/skills/grill-plan-team/SKILL.md',
+      '.grok/skills/grill-plan-team/SKILL.md'
     ];
 
     for (const relPath of filesToCheck) {
@@ -585,7 +637,9 @@ describe('Cross-Harness Parity & Byte Integrity', () => {
 
     assert.strictEqual(shManifest.version, nodeManifest.version);
     assert.deepStrictEqual(shManifest.harnesses.sort(), nodeManifest.harnesses.sort());
+    assert.strictEqual(shManifest.harnesses.length, 12, '12 harnesses in manifest');
     assert.strictEqual(shManifest.installedFiles.length, nodeManifest.installedFiles.length);
+    assert.strictEqual(shManifest.installedFiles.length, 18, '18 installed files in manifest');
   });
 });
 
@@ -652,6 +706,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
   test('SKILL.md and all harness templates include Step 0 Memory Recall and Phase 4 Reflection & Distillation', () => {
     const files = [
       path.join(REPO_ROOT, 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
       path.join(REPO_ROOT, 'rules', 'AGENTS.md'),
       path.join(REPO_ROOT, '.claude', 'skills', 'grill-plan-team', 'SKILL.md'),
       path.join(REPO_ROOT, '.claude', 'commands', 'grill-plan-team.md'),
@@ -668,7 +723,14 @@ describe('Two-Tier Recursive Memory Engine', () => {
       path.join(REPO_ROOT, 'templates', 'cursor', '.cursor', 'rules', 'grill-plan-team.mdc'),
       path.join(REPO_ROOT, 'templates', 'windsurf', '.windsurfrules'),
       path.join(REPO_ROOT, 'templates', 'roo', '.roomodes'),
-      path.join(REPO_ROOT, 'templates', 'roo', '.clinerules')
+      path.join(REPO_ROOT, 'templates', 'roo', '.clinerules'),
+      path.join(REPO_ROOT, 'templates', 'kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'pi', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'omp', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'codex', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'grok', 'skills', 'grill-plan-team', 'SKILL.md')
     ];
 
     for (const file of files) {
@@ -1351,5 +1413,191 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(fs.existsSync(path.join(tmpDir, '.grill-plan-team', 'REQUIREMENTS.md')));
   });
 });
+
+describe('7 Additional Coding Agent Harnesses Integration (12 Total)', () => {
+  let tmpDir;
+  let fakeHome;
+
+  function getFakeEnv(homePath) {
+    return {
+      ...process.env,
+      HOME: homePath,
+      USERPROFILE: homePath,
+      XDG_CONFIG_HOME: path.join(homePath, '.config')
+    };
+  }
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-new-harness-'));
+    fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-new-fake-home-'));
+  });
+
+  afterEach(() => {
+    if (tmpDir && fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+    if (fakeHome && fs.existsSync(fakeHome)) fs.rmSync(fakeHome, { recursive: true, force: true });
+  });
+
+  test('CLI alias normalization for all 7 new harnesses in Node and Bash installers', () => {
+    const aliasMap = [
+      { alias: 'kimi-code', canonical: 'kimi' },
+      { alias: 'hermes-agent', canonical: 'hermes' },
+      { alias: 'pi-agent', canonical: 'pi' },
+      { alias: 'oh-my-pi', canonical: 'omp' },
+      { alias: 'openai-codex', canonical: 'codex' },
+      { alias: 'grok-build', canonical: 'grok' }
+    ];
+
+    for (const item of aliasMap) {
+      // Test Node CLI
+      const testDirNode = path.join(tmpDir, `node-${item.canonical}`);
+      fs.mkdirSync(testDirNode, { recursive: true });
+      execFileSync('node', [BIN_INSTALL_JS, '--local', testDirNode, '--harness', item.alias]);
+      const nodeManifest = JSON.parse(fs.readFileSync(path.join(testDirNode, '.grill-plan-team-manifest.json'), 'utf8'));
+      assert.ok(nodeManifest.harnesses.includes(item.canonical), `Node manifest contains canonical ${item.canonical}`);
+      assert.ok(fs.existsSync(path.join(testDirNode, `.${item.canonical}`, 'skills', 'grill-plan-team', 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(testDirNode, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
+
+      // Test Bash Installer
+      const testDirBash = path.join(tmpDir, `bash-${item.canonical}`);
+      fs.mkdirSync(testDirBash, { recursive: true });
+      execFileSync('bash', [INSTALL_SH, '--local', testDirBash, '--harness', item.alias]);
+      const bashManifest = JSON.parse(fs.readFileSync(path.join(testDirBash, '.grill-plan-team-manifest.json'), 'utf8'));
+      assert.ok(bashManifest.harnesses.includes(item.canonical), `Bash manifest contains canonical ${item.canonical}`);
+      assert.ok(fs.existsSync(path.join(testDirBash, `.${item.canonical}`, 'skills', 'grill-plan-team', 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(testDirBash, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
+    }
+  });
+
+  test('Local install of individual new harness writes both dedicated path and .agents open standard', () => {
+    const harnesses = ['kimi', 'hermes', 'pi', 'omp', 'opencode', 'codex', 'grok'];
+    for (const harness of harnesses) {
+      const subDir = path.join(tmpDir, harness);
+      fs.mkdirSync(subDir, { recursive: true });
+      execFileSync('node', [BIN_INSTALL_JS, '--local', subDir, '--harness', harness]);
+
+      assert.ok(
+        fs.existsSync(path.join(subDir, `.${harness}`, 'skills', 'grill-plan-team', 'SKILL.md')),
+        `Dedicated .${harness} path exists`
+      );
+      assert.ok(
+        fs.existsSync(path.join(subDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')),
+        `.agents standard path exists for ${harness}`
+      );
+
+      const manifest = JSON.parse(fs.readFileSync(path.join(subDir, '.grill-plan-team-manifest.json'), 'utf8'));
+      assert.strictEqual(manifest.harnesses.length, 1);
+      assert.strictEqual(manifest.harnesses[0], harness);
+      assert.strictEqual(manifest.installedFiles.length, 2);
+    }
+  });
+
+  test('Selective uninstallation preserves .agents standard when other agent harnesses remain (Node & Bash)', () => {
+    // Test Node CLI
+    const nodeDir = path.join(tmpDir, 'selective-node');
+    fs.mkdirSync(nodeDir, { recursive: true });
+    execFileSync('node', [BIN_INSTALL_JS, '--local', nodeDir, '--harness', 'kimi,hermes,opencode']);
+    assert.ok(fs.existsSync(path.join(nodeDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(nodeDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(nodeDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(nodeDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
+
+    // Uninstall kimi
+    execFileSync('node', [BIN_INSTALL_JS, '--local', nodeDir, '--harness', 'kimi', '--uninstall']);
+    assert.ok(!fs.existsSync(path.join(nodeDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md')), 'kimi removed');
+    assert.ok(fs.existsSync(path.join(nodeDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md')), 'hermes preserved');
+    assert.ok(fs.existsSync(path.join(nodeDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')), 'opencode preserved');
+    assert.ok(fs.existsSync(path.join(nodeDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')), '.agents preserved while hermes & opencode exist');
+
+    // Uninstall hermes
+    execFileSync('node', [BIN_INSTALL_JS, '--local', nodeDir, '--harness', 'hermes', '--uninstall']);
+    assert.ok(!fs.existsSync(path.join(nodeDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md')), 'hermes removed');
+    assert.ok(fs.existsSync(path.join(nodeDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')), 'opencode preserved');
+    assert.ok(fs.existsSync(path.join(nodeDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')), '.agents preserved while opencode exists');
+
+    // Uninstall opencode (last agent harness)
+    execFileSync('node', [BIN_INSTALL_JS, '--local', nodeDir, '--harness', 'opencode', '--uninstall']);
+    assert.ok(!fs.existsSync(path.join(nodeDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')), 'opencode removed');
+    assert.ok(!fs.existsSync(path.join(nodeDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')), '.agents removed when last agent harness uninstalled');
+    assert.strictEqual(fs.readdirSync(nodeDir).length, 0, 'Clean directory after all uninstalled');
+
+    // Test Bash script
+    const bashDir = path.join(tmpDir, 'selective-bash');
+    fs.mkdirSync(bashDir, { recursive: true });
+    execFileSync('bash', [INSTALL_SH, '--local', bashDir, '--harness', 'kimi,hermes,opencode']);
+    assert.ok(fs.existsSync(path.join(bashDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
+
+    execFileSync('bash', [INSTALL_SH, '--local', bashDir, '--harness', 'kimi', '--uninstall']);
+    assert.ok(!fs.existsSync(path.join(bashDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(bashDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')), '.agents preserved by bash installer');
+
+    execFileSync('bash', [INSTALL_SH, '--local', bashDir, '--harness', 'hermes,opencode', '--uninstall']);
+    assert.ok(!fs.existsSync(path.join(bashDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')), '.agents removed by bash installer on last agent uninstall');
+    assert.strictEqual(fs.readdirSync(bashDir).length, 0, 'Clean directory after all uninstalled in bash');
+  });
+
+  test('Auto-detection discovers all 7 new harnesses via directory markers', () => {
+    const { detectInstalledHarnesses } = require('../bin/install.js');
+    const markers = [
+      { dir: '.kimi', harness: 'kimi' },
+      { dir: '.hermes', harness: 'hermes' },
+      { dir: '.pi', harness: 'pi' },
+      { dir: '.omp', harness: 'omp' },
+      { dir: path.join('.config', 'opencode'), harness: 'opencode' },
+      { dir: '.codex', harness: 'codex' },
+      { dir: '.grok', harness: 'grok' }
+    ];
+
+    for (const marker of markers) {
+      const harnessHome = fs.mkdtempSync(path.join(os.tmpdir(), `gpt-detect-${marker.harness}-`));
+      fs.mkdirSync(path.join(harnessHome, marker.dir), { recursive: true });
+      const detected = detectInstalledHarnesses(harnessHome);
+      assert.ok(detected.includes(marker.harness), `Detected ${marker.harness} via ${marker.dir}`);
+      fs.rmSync(harnessHome, { recursive: true, force: true });
+    }
+  });
+
+  test('Simulated global install and uninstall for new harnesses (Node & Bash)', () => {
+    // Node CLI global install
+    execFileSync('node', [BIN_INSTALL_JS, '--harness', 'kimi,pi,opencode'], {
+      env: getFakeEnv(fakeHome)
+    });
+
+    const expectedKimi = path.join(fakeHome, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md');
+    const expectedPi = path.join(fakeHome, '.pi', 'agent', 'skills', 'grill-plan-team', 'SKILL.md');
+    const expectedOpencode = path.join(fakeHome, '.config', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md');
+
+    assert.ok(fs.existsSync(expectedKimi), 'Global Kimi skill installed');
+    assert.ok(fs.existsSync(expectedPi), 'Global Pi skill installed in .pi/agent/skills/...');
+    assert.ok(fs.existsSync(expectedOpencode), 'Global OpenCode skill installed in .config/opencode/skills/...');
+
+    // Node CLI global uninstall
+    execFileSync('node', [BIN_INSTALL_JS, '--harness', 'kimi,pi,opencode', '--uninstall'], {
+      env: getFakeEnv(fakeHome)
+    });
+
+    assert.ok(!fs.existsSync(expectedKimi), 'Global Kimi skill uninstalled');
+    assert.ok(!fs.existsSync(expectedPi), 'Global Pi skill uninstalled');
+    assert.ok(!fs.existsSync(expectedOpencode), 'Global OpenCode skill uninstalled');
+
+    // Bash script global install
+    execFileSync('bash', [INSTALL_SH, '--harness', 'kimi,pi,opencode'], {
+      env: getFakeEnv(fakeHome)
+    });
+
+    assert.ok(fs.existsSync(expectedKimi), 'Bash global Kimi skill installed');
+    assert.ok(fs.existsSync(expectedPi), 'Bash global Pi skill installed in .pi/agent/skills/...');
+    assert.ok(fs.existsSync(expectedOpencode), 'Bash global OpenCode skill installed in .config/opencode/skills/...');
+
+    // Bash script global uninstall
+    execFileSync('bash', [INSTALL_SH, '--harness', 'kimi,pi,opencode', '--uninstall'], {
+      env: getFakeEnv(fakeHome)
+    });
+
+    assert.ok(!fs.existsSync(expectedKimi), 'Bash global Kimi skill uninstalled');
+    assert.ok(!fs.existsSync(expectedPi), 'Bash global Pi skill uninstalled');
+    assert.ok(!fs.existsSync(expectedOpencode), 'Bash global OpenCode skill uninstalled');
+  });
+});
+
 
 

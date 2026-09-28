@@ -1,7 +1,7 @@
 {
   "name": "grill-plan-team",
   "version": "1.0.0",
-  "description": "Cross-harness 3-phase gated development workflow (Grill-Me -> Plan -> Teamwork) for Antigravity, Claude Code, Cursor, Windsurf, and Roo Code / Cline.",
+  "description": "Cross-harness 4-phase gated development workflow (Grill-Me -> Plan -> Teamwork -> Distill) for 12 AI coding agents (Antigravity, Claude Code, Cursor, Windsurf, Roo Code, Kimi, Hermes, Pi, Oh My Pi, OpenCode, Codex, Grok).",
   "main": "bin/install.js",
   "bin": {
     "grill-plan-team": "./bin/install.js"
@@ -27,7 +27,14 @@
     "cursorrules",
     "windsurf",
     "roo-code",
-    "cline"
+    "cline",
+    "kimi",
+    "hermes",
+    "pi-agent",
+    "oh-my-pi",
+    "opencode",
+    "codex",
+    "grok"
   ],
   "author": "Tyson Goulding",
   "license": "MIT",
@@ -50,6 +57,7 @@
     ".cursorrules",
     ".windsurfrules",
     ".roomodes",
-    ".clinerules"
+    ".clinerules",
+    ".agents"
   ]
 }

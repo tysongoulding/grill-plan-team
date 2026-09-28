@@ -5,8 +5,9 @@ description: >-
   (global user & local project). Ingests memory before Phase 1, conducts an adaptive
   architectural interview (Phase 1), produces a memory-grounded blueprint (Phase 2),
   executes with programmatic verification (Phase 3), and autonomously distills lessons
-  into persistent memory (Phase 4). Fully standalone across Antigravity, Claude Code,
-  Cursor, Windsurf, and Roo Code.
+  into persistent memory (Phase 4). Fully standalone across all 12 supported harnesses:
+  Antigravity, Claude Code, Cursor, Windsurf, Roo Code, Kimi Code, Hermes Agent,
+  Pi Agent, Oh My Pi, OpenCode, Codex, and Grok Build.
 ---
 
 # Grill-Me $\to$ Plan $\to$ Teamwork $\to$ Distill Pipeline (Recursive Memory Engine)
@@ -174,8 +175,8 @@ Once the user approves ("launch", "go", "proceed", or auto-approved):
        ]
      }
      ```
-   - In environments where a specialized swarm orchestrator is pre-configured, that type may also be used.
-3. **For Single-Agent Harnesses (Claude Code, Cursor, Windsurf, Roo Code)**:
+    - In environments where a specialized swarm orchestrator is pre-configured, that type may also be used.
+3. **For Single-Agent Harnesses (Claude Code, Cursor, Windsurf, Roo Code, Kimi Code, Hermes Agent, Pi Agent, Oh My Pi, OpenCode, Codex, Grok Build)**:
    - Execute the approved plan directly as the lead orchestrator:
      - Decompose the requirements into discrete steps.
      - Implement code changes and immediately run objective verification commands (`npm test`, `tsc`, linters).
@@ -218,4 +219,12 @@ If the user asks to `remove` or `uninstall` this workflow/skill (e.g. `uninstall
    - **Cursor**: Delete `~/.cursor/rules/grill-plan-team.mdc`, `~/.cursorrules`, and `~/.cursor/skills/grill-plan-team`
    - **Windsurf**: Delete `.windsurfrules`
    - **Roo Code**: Delete `.roomodes` and `.clinerules`
+   - **Kimi Code**: Delete `~/.kimi/skills/grill-plan-team`
+   - **Hermes Agent**: Delete `~/.hermes/skills/grill-plan-team`
+   - **Pi Agent**: Delete `~/.pi/agent/skills/grill-plan-team`
+   - **Oh My Pi**: Delete `~/.omp/skills/grill-plan-team`
+   - **OpenCode**: Delete `~/.config/opencode/skills/grill-plan-team`
+   - **Codex**: Delete `~/.codex/skills/grill-plan-team`
+   - **Grok Build**: Delete `~/.grok/skills/grill-plan-team`
+   - **Universal Local**: Delete `.agents/skills/grill-plan-team`
 3. Provide a clear confirmation to the user once removed.

@@ -6,7 +6,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
 
 > **A self-contained, recursive gated workflow plugin with two-tier memory for AI coding agents.**  
-> Zero external runtime dependencies. Works seamlessly across **Antigravity / Gemini CLI**, **Claude Code**, **Cursor**, **Windsurf**, and **Roo Code / Cline**.
+> Zero external runtime dependencies. Works seamlessly across 12 harnesses: **Antigravity / Gemini CLI**, **Claude Code**, **Cursor**, **Windsurf**, **Roo Code / Cline**, **Kimi Code**, **Hermes Agent**, **Pi Agent**, **Oh My Pi**, **OpenCode**, **Codex**, and **Grok Build**.
 
 ---
 
@@ -74,6 +74,13 @@ During your first baseline assessment, you choose how the skill is triggered (sa
 - **Cursor**: Automatically loaded via `.cursorrules` and `.cursor/rules/grill-plan-team.mdc`.
 - **Windsurf**: Cascade auto-evaluates via `.windsurfrules`.
 - **Roo Code / Cline**: Select the **Grill-Plan-Team** mode from the UI dropdown.
+- **Kimi Code**: Auto-loaded from `~/.kimi/skills/grill-plan-team` or `.agents/skills/grill-plan-team`.
+- **Hermes Agent**: Auto-loaded from `~/.hermes/skills/grill-plan-team` or `.agents/skills/grill-plan-team`.
+- **Pi Agent**: Loaded from `~/.pi/agent/skills/grill-plan-team` or `.agents/skills/grill-plan-team`.
+- **Oh My Pi**: Loaded from `~/.omp/skills/grill-plan-team` or `.agents/skills/grill-plan-team`.
+- **OpenCode**: Auto-loaded from `~/.config/opencode/skills/grill-plan-team` or `.agents/skills/grill-plan-team`.
+- **Codex**: Auto-loaded from `~/.codex/skills/grill-plan-team` or `.agents/skills/grill-plan-team`.
+- **Grok Build**: Auto-loaded from `~/.grok/skills/grill-plan-team` or `.agents/skills/grill-plan-team`.
 
 #### Rerun Assessment Anytime
 You can update your profile, guardrails, or trigger mode anytime:
@@ -92,7 +99,7 @@ npx grill-plan-team assess [--user | --project]
 
 ### Simple Installation
 
-#### In Agent Chat (Antigravity, Claude Code, Cursor, Windsurf, Roo)
+#### In Agent Chat (All 12 Supported Harnesses)
 Simply paste this prompt into your agent's chat:
 ```text
 install https://github.com/tysongoulding/grill-plan-team

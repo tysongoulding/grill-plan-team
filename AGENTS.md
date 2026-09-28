@@ -1,6 +1,6 @@
 # AGENTS.md — Grill-Plan-Team Agent Guide & Workflow Governance
 
-This document provides definitive instructions for AI coding agents (Antigravity, Claude Code, Cursor, Windsurf, Roo Code / Cline) installing, configuring, and operating within this repository.
+This document provides definitive instructions for 12 AI coding agents (Antigravity, Claude Code, Cursor, Windsurf, Roo Code / Cline, Kimi Code, Hermes Agent, Pi Agent, Oh My Pi, OpenCode, Codex, Grok Build) installing, configuring, and operating within this repository.
 
 ---
 
@@ -34,7 +34,14 @@ If you know your specific runtime environment, run the targeted installer comman
 | **Cursor** | `~/.cursor/rules` & `.cursorrules` | `node bin/install.js --harness cursor` |
 | **Windsurf** | `.windsurfrules` | `node bin/install.js --harness windsurf` |
 | **Roo Code / Cline** | `.roomodes` & `.clinerules` | `node bin/install.js --harness roo` |
-| **All Harnesses** | Global across all installed harnesses | `node bin/install.js --all` |
+| **Kimi Code** | `~/.kimi/skills` & `.agents/skills` | `node bin/install.js --harness kimi` |
+| **Hermes Agent** | `~/.hermes/skills` & `.agents/skills` | `node bin/install.js --harness hermes` |
+| **Pi Agent** | `~/.pi/agent/skills` & `.agents/skills` | `node bin/install.js --harness pi` |
+| **Oh My Pi** | `~/.omp/skills` & `.agents/skills` | `node bin/install.js --harness omp` |
+| **OpenCode** | `~/.config/opencode/skills` & `.agents/skills` | `node bin/install.js --harness opencode` |
+| **Codex** | `~/.codex/skills` & `.agents/skills` | `node bin/install.js --harness codex` |
+| **Grok Build** | `~/.grok/skills` & `.agents/skills` | `node bin/install.js --harness grok` |
+| **All Harnesses** | Global across all 12 installed harnesses | `node bin/install.js --all` |
 
 > [!NOTE]
 > **Cursor Installation Note**: Cursor indexes rules from `~/.cursor/rules/grill-plan-team.mdc` and `.cursorrules`. To avoid duplicate entries in the slash/skills palette, do not simultaneously copy files into both `~/.cursor/skills/` and `~/.claude/commands/`.
@@ -83,6 +90,14 @@ node bin/install.js --all --uninstall --purge
 - **Cursor**: Remove `~/.cursor/rules/grill-plan-team.mdc`, `~/.cursorrules`, and `~/.cursor/skills/grill-plan-team`
 - **Windsurf**: Remove `.windsurfrules`
 - **Roo Code / Cline**: Remove `.roomodes` and `.clinerules`
+- **Kimi Code**: Remove `~/.kimi/skills/grill-plan-team`
+- **Hermes Agent**: Remove `~/.hermes/skills/grill-plan-team`
+- **Pi Agent**: Remove `~/.pi/agent/skills/grill-plan-team`
+- **Oh My Pi**: Remove `~/.omp/skills/grill-plan-team`
+- **OpenCode**: Remove `~/.config/opencode/skills/grill-plan-team`
+- **Codex**: Remove `~/.codex/skills/grill-plan-team`
+- **Grok Build**: Remove `~/.grok/skills/grill-plan-team`
+- **Universal Local Standard**: Remove `.agents/skills/grill-plan-team`
 - **Memory files (only if purge requested)**: Remove `~/.config/grill-plan-team`
 
 3. **Confirm completion** to the user with a concise summary of cleaned paths.
