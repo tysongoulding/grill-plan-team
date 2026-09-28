@@ -1036,6 +1036,7 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
         UNINSTALL_FILES+=(
           "${TARGET_DIR}/.cursor/rules/grill-plan-team.mdc"
           "${TARGET_DIR}/.cursorrules"
+          "${TARGET_DIR}/.cursor/skills/grill-plan-team/SKILL.md"
         )
         ;;
       windsurf)
@@ -1094,6 +1095,8 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
     rmdir "${TARGET_DIR}/.claude/skills" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.claude/commands" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.claude" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.cursor/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.cursor/skills" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.cursor/rules" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.cursor" 2>/dev/null || true
     rmdir "${TARGET_DIR}/skills/grill-plan-team" 2>/dev/null || true

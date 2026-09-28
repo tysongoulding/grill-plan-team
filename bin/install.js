@@ -1025,6 +1025,12 @@ async function run(cliArgs = process.argv.slice(2)) {
           filesToRemove.add(m.target);
         }
       }
+      if (h === 'cursor') {
+        const cursorSkill = path.join(baseDir, '.cursor', 'skills', 'grill-plan-team', 'SKILL.md');
+        if (fs.existsSync(cursorSkill)) {
+          filesToRemove.add(cursorSkill);
+        }
+      }
     }
 
     // If uninstalling ALL harnesses (no specific harness requested), include any remaining manifest files
@@ -1064,6 +1070,8 @@ async function run(cliArgs = process.argv.slice(2)) {
       path.join(baseDir, '.claude', 'skills'),
       path.join(baseDir, '.claude', 'commands'),
       path.join(baseDir, '.claude'),
+      path.join(baseDir, '.cursor', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.cursor', 'skills'),
       path.join(baseDir, '.cursor', 'rules'),
       path.join(baseDir, '.cursor'),
       path.join(baseDir, 'skills', 'grill-plan-team'),
