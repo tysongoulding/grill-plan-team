@@ -51,11 +51,17 @@ flowchart LR
 ```
 
 ### Step 0: Pre-Flight Memory Recall
-Before asking any questions or modifying files, the agent automatically ingests context from persistent memory:
-- **Global User Memory (`-user`)**: Identifies personal developer preferences, preferred tech stacks (e.g. zero runtime dependencies, native test runners), architectural heuristics, and interaction style.
-- **Local Project Memory (`-per-project`)**: Identifies repository conventions, domain terminology, historical architectural decisions (ADRs), and past reviewer pitfall lessons.
+Before asking any questions or modifying files, the agent automatically ingests context from persistent memory across both scopes:
+- **Developer Assessment (`ASSESSMENT.md`)**: Identifies personal developer persona, job role, daily duties, AI experience & proficiency level (at top), and collaboration/communication preferences.
+- **Engineering Requirements (`REQUIREMENTS.md`)**: Identifies technical guardrails, VCS processes (`git`, `gh`, GitLab, Bitbucket), preferred languages, libraries, test runners, architectural decision records (ADRs), and reviewer pitfall lessons.
+
+Ingested from local project memory (`.grill-plan-team/`) first, falling back to global user memory (`~/.config/grill-plan-team/`).
 
 ### Phase 1: Interactive Alignment (`Grill-Me`)
+- **Baseline Onboarding & Rerun Trigger**: On the very first run (when baseline memory files are missing) or whenever you request an update (`re-assess`, `update preferences`, `rerun assessment`), the skill prompts for:
+  1. Memory scope: Global User (`~/.config/grill-plan-team/`) or Project Local (`.grill-plan-team/`).
+  2. Developer role, daily focus, and AI proficiency level.
+  3. Technical guardrails, VCS process, preferred languages, and test runners.
 - **Adaptive Memory Recall**: Trivial questions already resolved in memory are skipped.
 - **One Question at a Time**: Avoids overwhelming the user by presenting structured multiple-choice decisions one at a time.
 - **Always Recommend with Attribution**: Prefixes recommended options with `(Recommended)` and provides concise engineering rationales, explicitly citing memory when recommendations align with established preferences.
@@ -74,13 +80,13 @@ Before asking any questions or modifying files, the agent automatically ingests 
 ### Phase 3: Multi-Agent Swarm Handoff (`Teamwork`)
 - **Prompt Draft Artifact**: Packages the approved plan into `prompt_draft.md` with behavioral requirements (R1, R2, ...) and objective acceptance criteria checkboxes.
 - **Specify What, Not How**: Gives agents high-leverage boundaries without micromanaging implementation details.
-- **Autonomous Delegation**: Handoffs execution to the multi-agent swarm (`invoke_subagent` in Antigravity or native harness subagents).
+- **Autonomous Delegation**: Handoffs execution to autonomous task workers (`invoke_subagent` in Antigravity or native harness subagents).
 - **Rigorous Verification**: Runs objective test suites. Never weakens or deletes tests to pass. Distinguishes verified from unverified aspects.
 
 ### Phase 4: Reflection & Distillation Loop (`Distill`)
 Runs autonomously immediately after Phase 3 verification passes:
-1. **User Preferences**: Distills user choices and explicit overrides made during the interview into `~/.config/grill-plan-team/user-memory.md`.
-2. **Architectural Decision Records (ADRs)**: Appends newly locked architectural decisions to `.grill-plan-team/project-memory.md` under `## Architectural Decision History`.
+1. **User Preferences**: Distills user choices and explicit overrides made during the interview into `ASSESSMENT.md` under `## Distilled User Preferences`.
+2. **Architectural Decision Records (ADRs)**: Appends newly locked architectural decisions to `REQUIREMENTS.md` under `## Architectural Decision History`.
 3. **Pitfall Avoidance**: Records actionable preventative lessons for bugs or edge cases uncovered during execution under `## Past Pitfalls & Reviewer Lessons`.
 4. **Anti-Bloat**: Enforces concise, deduplicated bullet points so memory stays high-signal and lightweight over time.
 
@@ -88,34 +94,42 @@ Runs autonomously immediately after Phase 3 verification passes:
 
 ## Two-Tier Memory Storage
 
-| Scope | Location | Primary Contents |
-| :--- | :--- | :--- |
-| **Global User Memory (`-user`)** | `~/.config/grill-plan-team/user-memory.md`<br/>*(or `$XDG_CONFIG_HOME/grill-plan-team/user-memory.md`)* | Developer profile, stack habits, test runner choices, architectural heuristics |
-| **Local Project Memory (`-per-project`)** | `.grill-plan-team/project-memory.md` | Archetype, domain terms, repo conventions, Architectural Decision Records (ADRs), pitfall lessons |
+Information is retained strictly across two files in either **Global User** or **Local Project** scope:
 
-Both memory files are clean, human-readable markdown with standardized headers, making them easy to inspect, version-control, or hand-edit at any time.
+| Scope | Location | Primary Document | Contents |
+| :--- | :--- | :--- | :--- |
+| **Global User (`-user`)** | `~/.config/grill-plan-team/` | `ASSESSMENT.md` | Developer role, daily work, AI experience level (at top), collaboration style |
+| **Global User (`-user`)** | `~/.config/grill-plan-team/` | `REQUIREMENTS.md` | Global guardrails, default VCS tools, preferred languages/libraries/runners |
+| **Local Project (`-project`)**| `.grill-plan-team/` | `ASSESSMENT.md` | Project-specific developer persona, team contact info, collaboration style |
+| **Local Project (`-project`)**| `.grill-plan-team/` | `REQUIREMENTS.md` | Repo guardrails, branching/PR workflows, tech stack, ADRs, reviewer lessons |
+
+*Note: Existing legacy memory files (`user-memory.md` / `project-memory.md`) are automatically migrated to `ASSESSMENT.md` and `REQUIREMENTS.md` upon initial run without data loss.*
 
 ---
 
 ## Memory CLI Commands
 
-`grill-plan-team` provides dedicated CLI commands to inspect and manage two-tier memory files:
+`grill-plan-team` provides dedicated CLI commands to inspect, initialize, and re-assess memory:
 
 ```bash
-# Display filesystem paths to memory files
-npx grill-plan-team memory path --user
-# => ~/.config/grill-plan-team/user-memory.md
+# Run baseline onboarding assessment anytime (interactive or non-interactive)
+npx grill-plan-team assess                   # Assesses and saves to global user scope
+npx grill-plan-team assess --project         # Assesses and saves to local project scope
 
-npx grill-plan-team memory path --project
-# => /path/to/project/.grill-plan-team/project-memory.md
+# Display filesystem paths to memory files
+npx grill-plan-team memory path assessment --user
+# => ~/.config/grill-plan-team/ASSESSMENT.md
+
+npx grill-plan-team memory path requirements --project
+# => /path/to/project/.grill-plan-team/REQUIREMENTS.md
 
 # Initialize memory files with standard markdown sections
-npx grill-plan-team memory init           # Initializes global user memory
-npx grill-plan-team memory init --project # Initializes local project memory
+npx grill-plan-team memory init              # Initializes ASSESSMENT.md & REQUIREMENTS.md globally
+npx grill-plan-team memory init --project    # Initializes ASSESSMENT.md & REQUIREMENTS.md locally
 
 # View memory content directly in the terminal
-npx grill-plan-team memory show --user
-npx grill-plan-team memory show --project
+npx grill-plan-team memory show assessment --user
+npx grill-plan-team memory show requirements --project
 ```
 
 Both `npx grill-plan-team` and `./install.sh` support these memory subcommands identically.
@@ -163,7 +177,7 @@ To install rules and adapters directly into your current project repository:
 npx grill-plan-team --local .
 ```
 
-*Note: Global user memory (`~/.config/grill-plan-team/user-memory.md`) is auto-initialized during installation if it does not already exist.*
+*Note: Global user memory files (`ASSESSMENT.md` and `REQUIREMENTS.md`) are auto-initialized in `~/.config/grill-plan-team/` during installation if they do not already exist.*
 
 ---
 

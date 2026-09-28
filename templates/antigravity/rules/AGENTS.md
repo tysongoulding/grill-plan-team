@@ -16,13 +16,14 @@ flowchart LR
 
 ### 0. Step 0: Memory Recall (Pre-Flight Context)
 - **Goal**: Ingest user and project context before any interview questions are asked.
-- **Rule 1 — Global User Memory**: Read `~/.config/grill-plan-team/user-memory.md` to identify global developer preferences, preferred tech stacks, and interaction styles.
-- **Rule 2 — Local Project Memory**: Read `.grill-plan-team/project-memory.md` in project root for repository conventions, domain terms, past ADRs, and reviewer lessons.
+- **Rule 1 — Developer Assessment**: Read `.grill-plan-team/ASSESSMENT.md` (Project Local) or `~/.config/grill-plan-team/ASSESSMENT.md` (User Global) for developer persona, job role, AI experience level, and collaboration preferences.
+- **Rule 2 — Requirements & Guardrails**: Read `.grill-plan-team/REQUIREMENTS.md` (Project Local) or `~/.config/grill-plan-team/REQUIREMENTS.md` (User Global) for technical guardrails, VCS workflows (`gh`, `git`, GitLab, Bitbucket), stack preferences, past ADRs, and reviewer lessons.
 
 ### 1. Phase 1: Interactive Alignment (Grill-Me)
 - **Goal**: Resolve all technical, UX, and architectural decisions before writing any code or plans.
+- **Rule 0 — Baseline Assessment Onboarding**: If baseline documents are missing or if the user requests a reset (`re-assess`, `update preferences`), prompt for scope choice (User Global vs Project Local), developer role & AI experience, and guardrails/VCS/stack rules, then initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
 - **Rule 1 — Adaptive Memory Recall**: Skip trivial questions already resolved by memory.
-- **Rule 2 — One Question at a Time**: Use interactive questions (`ask_question` tool where available, or focused multiple-choice prompts) to present clear, structured options. Never overwhelm the user with lists of unstructured questions.
+- **Rule 2 — One Question at a Time**: Use interactive questions (`ask_question` tool where available, or focused multiple-choice prompts) to present clear, structured options. Keep options concise. Never overwhelm the user with lists of unstructured questions.
 - **Rule 3 — Explore Codebase First**: Search existing code, configs, patterns, and dependencies before asking. Adopt repository conventions instead of asking obvious questions.
 - **Rule 4 — Always Recommend with Attribution**: Prefix your chosen option with `(Recommended)` and provide a concise engineering rationale, explicitly noting when derived from user or project memory.
 - **Rule 5 — Walk the Design Tree**: Resolve decisions systematically: Data models $\to$ API contract $\to$ State/Storage $\to$ CLI/UI surface $\to$ Edge cases.
@@ -50,8 +51,8 @@ flowchart LR
 - **Rule 3 — Universal Execution Protocol**: Once the user confirms ("launch", "go", "approved"), update status to `Launched`, extract the prompt, and execute. In multi-agent harnesses supporting subagent tools (like `invoke_subagent`), delegate to an autonomous subagent (`TypeName: "self"`). On single-agent harnesses, execute the plan directly as the lead orchestrator.
 
 ### 4. Phase 4: Reflection & Distillation Loop
-- **Goal**: Persist learnings from interview choices, architectural outcomes, and test results back into memory.
-- **Rule 1 — User Memory Distillation**: Record user tool/preference overrides in `~/.config/grill-plan-team/user-memory.md`.
-- **Rule 2 — Architectural Records**: Append new decisions to `.grill-plan-team/project-memory.md` under `## Architectural Decision History`.
-- **Rule 3 — Preventative Lessons**: Record test failures, edge case fixes, and reviewer feedback under `## Past Pitfalls & Reviewer Lessons`.
+- **Goal**: Persist learnings from interview choices, architectural outcomes, and test results into `ASSESSMENT.md` and `REQUIREMENTS.md`.
+- **Rule 1 — User Assessment Distillation**: Record developer interaction preferences and tool feedback in `ASSESSMENT.md` under `## Distilled User Preferences`.
+- **Rule 2 — Architectural Records**: Append new decisions to `REQUIREMENTS.md` under `## Architectural Decision History`.
+- **Rule 3 — Preventative Lessons**: Record test failures, edge case fixes, and reviewer feedback under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 - **Rule 4 — Anti-Bloat**: Enforce concise, deduplicated bullet points.

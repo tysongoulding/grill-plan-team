@@ -11,15 +11,16 @@ flowchart LR
 ```
 
 ## Step 0: Memory Recall (Two-Tier Retrieval)
-- Check `~/.config/grill-plan-team/user-memory.md` to load global developer preferences.
-- Check `.grill-plan-team/project-memory.md` to load project archetype, conventions, past ADRs, and known pitfalls.
+- Load developer assessment from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
+- Load requirements and guardrails from `.grill-plan-team/REQUIREMENTS.md` or `~/.config/grill-plan-team/REQUIREMENTS.md`.
 
 ## Phase 1: Interactive Alignment (Grill-Me)
-1. **Explore First**: Check files, dependencies, and git history before asking questions.
-2. **Adaptive Recall**: Skip trivial questions answered by persistent memory.
-3. **One Question at a Time**: Provide structured multiple-choice options with one clearly labeled `(Recommended)` option containing an engineering rationale, citing memory when applicable.
-4. **Walk the Decision Tree**: Work through Data models $\to$ API contract $\to$ State/Storage $\to$ CLI/UI $\to$ Edge cases.
-5. **Gate**: Do not draft the plan until all scope boundaries and architectural choices are agreed.
+1. **Baseline Onboarding**: If baseline files are missing or user requests `re-assess`, prompt for scope (User vs Project), role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
+2. **Explore First**: Check files, dependencies, and git history before asking questions.
+3. **Adaptive Recall**: Skip trivial questions answered by persistent memory.
+4. **One Question at a Time**: Provide structured multiple-choice options with one clearly labeled `(Recommended)` option containing an engineering rationale, citing memory when applicable. Keep options concise.
+5. **Walk the Decision Tree**: Work through Data models $\to$ API contract $\to$ State/Storage $\to$ CLI/UI $\to$ Edge cases.
+6. **Gate**: Do not draft the plan until all scope boundaries and architectural choices are agreed.
 
 ## Phase 2: Technical Design & Verification (Plan)
 1. Deeply inspect codebase to verify imports, types, and existing tests.
@@ -39,7 +40,7 @@ flowchart LR
 4. Conclude with a clear report of verified tests and known limitations.
 
 ## Phase 4: Reflection & Distillation Loop
-1. Distill new user preferences into `~/.config/grill-plan-team/user-memory.md`.
-2. Append locked architectural decisions to `## Architectural Decision History` in `.grill-plan-team/project-memory.md`.
-3. Record bug fixes and reviewer edge-case lessons under `## Past Pitfalls & Reviewer Lessons` in `.grill-plan-team/project-memory.md`.
+1. Distill new user preferences into `ASSESSMENT.md` under `## Distilled User Preferences`.
+2. Append locked architectural decisions to `## Architectural Decision History` in `REQUIREMENTS.md`.
+3. Record bug fixes and reviewer edge-case lessons under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 4. Enforce concise, deduplicated bullets.

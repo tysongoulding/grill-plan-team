@@ -25,14 +25,16 @@ flowchart LR
 
 ## Step 0: Memory Recall (Two-Tier Context Retrieval)
 
-Before initiating Phase 1, inspect and ingest persistent memory layers into context:
-1. **Global User Memory (`-user`)**:
-   - Location: `~/.config/grill-plan-team/user-memory.md` (or `$XDG_CONFIG_HOME/grill-plan-team/user-memory.md`).
-   - Stores: Developer preferences, default tech stacks, architectural heuristics, and interaction style.
-2. **Local Project Memory (`-per-project`)**:
-   - Location: `.grill-plan-team/project-memory.md` in the repository root.
-   - Stores: Project archetype, domain terminology, established repository conventions, architectural decision records (ADRs), and reviewer pitfall lessons.
-3. If memory files exist, load them silently to prime all recommendations and planning. If they do not exist, proceed using standard defaults.
+Before initiating Phase 1, inspect and ingest persistent memory documents into context:
+1. **Developer Assessment Document (`ASSESSMENT.md`)**:
+   - Location: `.grill-plan-team/ASSESSMENT.md` (Project Local) or `~/.config/grill-plan-team/ASSESSMENT.md` (User Global).
+   - Ingests: Developer persona, job role, daily tasks, AI experience level, and preferred collaboration style.
+2. **Requirements & Guardrails Document (`REQUIREMENTS.md`)**:
+   - Location: `.grill-plan-team/REQUIREMENTS.md` (Project Local) or `~/.config/grill-plan-team/REQUIREMENTS.md` (User Global).
+   - Ingests: Technical guardrails, safety policies, VCS workflows (`git`, `gh` CLI, GitLab, Bitbucket), preferred languages and libraries, architectural decision records (ADRs), and reviewer pitfall lessons.
+3. **Hierarchy & Auto-Migration**:
+   - Project-level files take precedence over global user-level files.
+   - If legacy `user-memory.md` or `project-memory.md` files exist without the new documents, automatically migrate their contents into `ASSESSMENT.md` and `REQUIREMENTS.md`.
 
 ---
 
@@ -41,11 +43,24 @@ Before initiating Phase 1, inspect and ingest persistent memory layers into cont
 Conduct a targeted, adaptive interview with the user to explore and resolve all technical, UX, and architectural decisions before writing any code or plans.
 
 ### Execution Rules:
+
+#### 1. Baseline Assessment Onboarding (First-Run & Rerun Trigger)
+- **First-Run Detection**: If neither `ASSESSMENT.md` nor `REQUIREMENTS.md` exists (neither in local `.grill-plan-team/` nor in global `~/.config/grill-plan-team/`), or if the user requests a reset (`re-assess`, `update preferences`, `rerun assessment`):
+  - Conduct a short 3-question baseline assessment before addressing the immediate task:
+    1. **Storage Scope Choice**: Ask where they want to store their baseline preferences:
+       - `(Recommended) User Global Scope (~/.config/grill-plan-team/)` — machine-wide defaults for all projects.
+       - `Project Local Scope (.grill-plan-team/)` — repository-specific settings for this codebase.
+    2. **Developer Assessment**: Ask for their job role/daily focus and their experience level with AI (Beginner, Intermediate, Advanced, Power User).
+    3. **Requirements & Guardrails**: Ask for their guardrails (e.g. zero runtime deps, test protection), VCS workflow (`gh`, `git`, GitLab, Bitbucket), and preferred languages/libraries.
+  - Immediately save the baseline files (`ASSESSMENT.md` and `REQUIREMENTS.md`) to the selected location and proceed with the task.
+- **Subsequent Runs**: Skip baseline questions automatically and prime all decisions with established preferences.
+
+#### 2. Adaptive Task Alignment
 1. **Adaptive Memory Recall**:
    - Skip trivial questions already answered by user preferences or project memory.
    - Ground decisions in established project conventions and historical decisions.
 2. **One Question at a Time**:
-   - Use the `ask_question` tool for every decision to present structured, clickable multiple-choice options.
+   - Use the `ask_question` tool for every decision to present structured, clickable multiple-choice options. Keep option labels concise.
    - Never dump multiple separate questions in a single response unless they are grouped in an atomic `ask_question` call.
 3. **Always Recommend with Attribution**:
    - Provide your recommended choice for each question, prefixed with `(Recommended)` and accompanied by a concise engineering rationale.
@@ -164,16 +179,16 @@ Once the user approves ("launch", "go", "proceed", or auto-approved):
 
 ## Phase 4: Reflection & Distillation Loop
 
-Automatically execute this post-execution learning loop immediately after Phase 3 verification passes.
+Automatically execute this post-execution learning loop immediately after Phase 3 verification passes to persist learnings into the two categories: **User** and **Project**.
 
 ### Distillation Protocol:
-1. **User Preferences & Interaction Overrides**:
-   - If the user expressed new global preferences, tool choices, or style overrides during Phase 1, update `~/.config/grill-plan-team/user-memory.md`.
-2. **Architectural Decision Records (ADRs)**:
-   - Append concise entries for newly established architectural patterns or technical choices to `.grill-plan-team/project-memory.md` under `## Architectural Decision History`.
-   - Format: `- [YYYY-MM-DD - Feature/Component]: [Decision summary and core rationale]`.
-3. **Reviewer Lessons & Pitfall Avoidance**:
-   - If regressions, failed tests, edge-case bugs, or reviewer pushbacks occurred during execution, record actionable lessons under `## Past Pitfalls & Reviewer Lessons` in `.grill-plan-team/project-memory.md`.
-   - Format: `- [Pitfall Category]: [Concrete lesson and prevention heuristic]`.
+1. **Update `ASSESSMENT.md` (Developer Profile & Collaboration Preferences)**:
+   - Record explicit developer preferences, communication style feedback, and workflow adjustments under `## Distilled User Preferences`.
+2. **Update `REQUIREMENTS.md` (Technical Decisions, Guardrails & Lessons)**:
+   - **Architectural Records**: Append new design decisions and constraints under `## Architectural Decision History`. Format: `- [YYYY-MM-DD - Feature/Component]: [Decision summary and core rationale]`.
+   - **Preventative Lessons**: Record test failures, bugs, edge cases, and reviewer lessons under `## Past Pitfalls & Reviewer Lessons`. Format: `- [Pitfall Category]: [Concrete lesson and prevention heuristic]`.
+   - **Guardrails & Stack**: Update language/library or VCS workflow rules if modified during the project.
+3. **Scope Targeting**:
+   - Update `.grill-plan-team/REQUIREMENTS.md` for project-level decisions, or `~/.config/grill-plan-team/` for global developer overrides.
 4. **Bloat Prevention & Deduplication**:
    - Keep bullet points dense, actionable, and non-redundant. Merge or refine related points instead of appending duplicates.

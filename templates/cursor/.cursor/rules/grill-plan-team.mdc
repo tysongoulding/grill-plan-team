@@ -17,13 +17,14 @@ flowchart LR
 ```
 
 ## Step 0: Memory Recall (Two-Tier Context)
-- Ingest global user memory from `~/.config/grill-plan-team/user-memory.md` (developer style, preferences).
-- Ingest local project memory from `.grill-plan-team/project-memory.md` (conventions, ADRs, past pitfalls).
+- Ingest developer assessment from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
+- Ingest requirements & guardrails from `.grill-plan-team/REQUIREMENTS.md` or `~/.config/grill-plan-team/REQUIREMENTS.md`.
 
 ## Phase 1: Interactive Alignment (Grill-Me)
+- **Baseline Onboarding**: If baseline files are missing or user asks to `re-assess`, prompt for scope (User vs Project), role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
 - **Explore Codebase First**: Search files, configs, tests, and dependencies before asking questions.
 - **Adaptive Memory Recall**: Skip trivial questions already resolved by memory.
-- **One Question at a Time**: Never overwhelm the user. Present atomic multiple-choice decisions:
+- **One Question at a Time**: Never overwhelm the user. Present atomic multiple-choice decisions (keep options concise):
   - `A) Option 1`
   - `B) (Recommended) Option 2 - [concise rationale] (Aligned with user/project memory)`
   - `C) Option 3`
@@ -47,7 +48,7 @@ flowchart LR
 
 ## Phase 4: Reflection & Distillation Loop
 - Post-execution reflection runs automatically upon passing verification:
-  1. Record new user overrides in `~/.config/grill-plan-team/user-memory.md`.
-  2. Record key architectural decisions under `## Architectural Decision History` in `.grill-plan-team/project-memory.md`.
-  3. Record edge-case pitfalls and lessons under `## Past Pitfalls & Reviewer Lessons` in `.grill-plan-team/project-memory.md`.
+  1. Record new user overrides in `ASSESSMENT.md` under `## Distilled User Preferences`.
+  2. Record key architectural decisions under `## Architectural Decision History` in `REQUIREMENTS.md`.
+  3. Record edge-case pitfalls and lessons under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 - Maintain concise, deduplicated entries.

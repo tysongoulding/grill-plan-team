@@ -3,13 +3,14 @@
 Always follow the **Step 0 Recall $\to$ Grill-Me $\to$ Plan $\to$ Teamwork $\to$ Distill** workflow with two-tier recursive memory for all non-trivial tasks, features, and refactors. Do not skip or blend phases.
 
 ## Step 0: Memory Recall (Two-Tier Retrieval)
-- Check and ingest global user memory from `~/.config/grill-plan-team/user-memory.md` (developer preferences, tool habits).
-- Check and ingest local project memory from `.grill-plan-team/project-memory.md` (repository conventions, ADRs, pitfall lessons).
+- Ingest developer assessment from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
+- Ingest requirements & guardrails from `.grill-plan-team/REQUIREMENTS.md` or `~/.config/grill-plan-team/REQUIREMENTS.md`.
 
 ## Phase 1: Interactive Alignment (Grill-Me)
+- **First-run Onboarding**: If baseline files are missing or user asks to `re-assess`, prompt for scope (User vs Project), developer role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
 - Before writing code or plans, explore the codebase to understand existing patterns and conventions.
 - Skip trivial questions already answered by memory.
-- Ask questions **one at a time**. Provide structured multiple-choice options for decisions.
+- Ask questions **one at a time**. Provide structured multiple-choice options for decisions. Keep options concise.
 - Always include a `(Recommended)` option accompanied by an engineering rationale, noting when derived from memory.
 - Walk the decision tree: Architecture $\to$ Data models $\to$ API contract $\to$ State/Storage $\to$ UI/CLI surface $\to$ Edge cases.
 - Conclude Phase 1 only when technical tradeoffs and boundaries are fully agreed upon.
@@ -31,7 +32,7 @@ Always follow the **Step 0 Recall $\to$ Grill-Me $\to$ Plan $\to$ Teamwork $\to$
 - Deliver focused diffs and a completion summary distinguishing verified from unverified aspects.
 
 ## Phase 4: Reflection & Distillation Loop
-- After verification passes, record new developer preferences in `~/.config/grill-plan-team/user-memory.md`.
-- Append newly locked architectural choices to `.grill-plan-team/project-memory.md` under `## Architectural Decision History`.
-- Record testing or reviewer bug prevention heuristics under `## Past Pitfalls & Reviewer Lessons`.
+- After verification passes, record new developer preferences in `ASSESSMENT.md` under `## Distilled User Preferences`.
+- Append newly locked architectural choices to `REQUIREMENTS.md` under `## Architectural Decision History`.
+- Record testing or reviewer bug prevention heuristics under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 - Enforce deduplication and concise bullet points.

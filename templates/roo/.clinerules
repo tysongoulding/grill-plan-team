@@ -11,10 +11,11 @@ flowchart LR
 ```
 
 ## Step 0: Memory Recall (Two-Tier Context)
-- Ingest global user memory from `~/.config/grill-plan-team/user-memory.md` (preferences, stack habits).
-- Ingest local project memory from `.grill-plan-team/project-memory.md` (conventions, ADRs, known pitfalls).
+- Ingest developer assessment from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
+- Ingest requirements & guardrails from `.grill-plan-team/REQUIREMENTS.md` or `~/.config/grill-plan-team/REQUIREMENTS.md`.
 
 ## Phase 1: Interactive Alignment (Grill-Me)
+- **Baseline Onboarding**: If baseline files are missing or user asks to `re-assess`, prompt for scope (User vs Project), role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
 - Search codebase patterns and configurations before asking questions.
 - Skip trivial questions already answered in memory.
 - Ask questions one at a time using structured multiple choice:
@@ -42,7 +43,7 @@ flowchart LR
 
 ## Phase 4: Reflection & Distillation Loop
 - After verification passes, distill learned insights:
-  1. Record developer preference overrides in `~/.config/grill-plan-team/user-memory.md`.
-  2. Append core architectural choices to `## Architectural Decision History` in `.grill-plan-team/project-memory.md`.
-  3. Record edge-case pitfalls and lessons under `## Past Pitfalls & Reviewer Lessons` in `.grill-plan-team/project-memory.md`.
+  1. Record developer preference overrides in `ASSESSMENT.md` under `## Distilled User Preferences`.
+  2. Append core architectural choices to `## Architectural Decision History` in `REQUIREMENTS.md`.
+  3. Record edge-case pitfalls and lessons under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 - Keep notes concise and deduplicated.

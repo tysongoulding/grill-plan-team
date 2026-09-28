@@ -73,11 +73,69 @@ Repository-specific context, conventions, architectural decisions, and learned l
 - Path normalization: Always resolve paths and trim whitespace when handling user inputs.
 `;
 
+const DEFAULT_ASSESSMENT_TEMPLATE = `# Developer Assessment & Baseline Profile (grill-plan-team)
+
+Baseline assessment of developer role, daily work, AI experience level, and preferred collaboration style.
+
+## Developer Role & Daily Work
+- Primary role: Software Engineer / Architect.
+- Daily responsibilities: Full-stack system development, modular architecture, and autonomous workflow design.
+- Target domains: Developer tooling, agentic pipelines, cross-platform CLI applications.
+
+## AI Experience & Proficiency
+- AI proficiency level: Advanced / Power User.
+- Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
+- Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
+
+## Collaboration & Communication Style
+- Preferred interaction cadence: Direct, concise, technical rationale first.
+- Decision format: Present structured multiple-choice recommendations with explicit trade-offs and citations.
+- Explanations: Keep UI options concise; provide expanded technical deep dives when requested.
+
+## Distilled User Preferences
+- Learned interaction habits: Prefers automated verification prior to certification.
+- Workflow feedback: Value clean commits, high cohesion, and zero unnecessary dependencies.
+`;
+
+const DEFAULT_REQUIREMENTS_TEMPLATE = `# Engineering Requirements & Technical Guardrails (grill-plan-team)
+
+Technical guardrails, VCS workflows, language and library preferences, architectural records, and reviewer lessons.
+
+## Guardrails & Safety
+- Dependency policy: Zero external runtime dependencies; prioritize native runtime APIs (Node.js built-ins, standard libraries).
+- Test integrity: Never bypass, weaken, skip, or mock tests to achieve a passing state; run comprehensive test suites.
+- Safety boundaries: Defensive validation at integration seams; no destructive operations or unapproved force-pushes.
+- Compatibility: Maintain strict backward compatibility and non-breaking changes across releases.
+
+## VCS & Repository Processes
+- Preferred VCS tool: Official GitHub CLI (\`gh\`) and standard \`git\`.
+- Remote providers: GitHub (primary), with support for GitLab, Bitbucket, and custom git origins.
+- Branching & commits: Clean commit messages following conventional commits; local verification before push.
+- PR & review process: Structured descriptions, verification proof, and automated CI passing checks.
+
+## Preferred Languages & Runtimes
+- Primary languages: TypeScript, modern JavaScript (ESM/CJS), Bash/POSIX shell, Python.
+- Runtimes: Modern Node.js LTS (v20+, v22+), standard shell environments.
+- Typing: Strict TypeScript compilation with \`noEmit\` type checking.
+
+## Preferred Libraries & Frameworks
+- Test frameworks: Native test runner (\`node:test\`, \`node:assert\`), zero heavy testing framework bloat.
+- CLI & scripting: Built-in \`child_process\`, \`fs\`, \`path\`, \`os\`, and standard POSIX shell tools.
+
+## Architectural Decision History
+- [Initial Bootstrap]: Established unified 4-phase gated pipeline with cross-harness parity.
+
+## Past Pitfalls & Reviewer Lessons
+- Parity requirement: Any CLI or template change must be mirrored across both \`bin/install.js\` and \`install.sh\`.
+- Path normalization: Always resolve paths and trim whitespace when handling user inputs.
+- Cross-harness compatibility: Do not bind phase execution to proprietary subagent names.
+`;
+
 function getHomeDir() {
   return process.env.HOME || os.homedir();
 }
 
-function getUserMemoryPath(homeDir = getHomeDir()) {
+function getUserConfigDir(homeDir = getHomeDir()) {
   const isDefaultHome = !homeDir || homeDir === getHomeDir();
   let configHome;
   if (!isDefaultHome) {
@@ -87,11 +145,51 @@ function getUserMemoryPath(homeDir = getHomeDir()) {
   } else {
     configHome = path.join(homeDir || getHomeDir(), '.config');
   }
-  return path.join(configHome, 'grill-plan-team', 'user-memory.md');
+  return path.join(configHome, 'grill-plan-team');
+}
+
+function getUserAssessmentPath(homeDir = getHomeDir()) {
+  return path.join(getUserConfigDir(homeDir), 'ASSESSMENT.md');
+}
+
+function getUserRequirementsPath(homeDir = getHomeDir()) {
+  return path.join(getUserConfigDir(homeDir), 'REQUIREMENTS.md');
+}
+
+function getUserMemoryPath(homeDir = getHomeDir()) {
+  return path.join(getUserConfigDir(homeDir), 'user-memory.md');
+}
+
+function getProjectConfigDir(baseDir = process.cwd()) {
+  return path.join(baseDir, '.grill-plan-team');
+}
+
+function getProjectAssessmentPath(baseDir = process.cwd()) {
+  return path.join(getProjectConfigDir(baseDir), 'ASSESSMENT.md');
+}
+
+function getProjectRequirementsPath(baseDir = process.cwd()) {
+  return path.join(getProjectConfigDir(baseDir), 'REQUIREMENTS.md');
 }
 
 function getProjectMemoryPath(baseDir = process.cwd()) {
-  return path.join(baseDir, '.grill-plan-team', 'project-memory.md');
+  return path.join(getProjectConfigDir(baseDir), 'project-memory.md');
+}
+
+function getAssessmentTemplate() {
+  try {
+    return getTemplateContent('memory/ASSESSMENT.md');
+  } catch {
+    return DEFAULT_ASSESSMENT_TEMPLATE;
+  }
+}
+
+function getRequirementsTemplate() {
+  try {
+    return getTemplateContent('memory/REQUIREMENTS.md');
+  } catch {
+    return DEFAULT_REQUIREMENTS_TEMPLATE;
+  }
 }
 
 function getUserMemoryTemplate() {
@@ -110,18 +208,81 @@ function getProjectMemoryTemplate() {
   }
 }
 
-function ensureUserMemory(homeDir, dryRun) {
-  const memPath = getUserMemoryPath(homeDir);
-  if (!fs.existsSync(memPath)) {
-    if (dryRun) {
-      console.log(`[dry-run] Would initialize global user memory: ${memPath}`);
-    } else {
-      writeFileSyncSafe(memPath, getUserMemoryTemplate(), false);
-      console.log(`Initialized user memory: ${memPath}`);
+function migrateLegacyMemory(targetDir, scope = 'user') {
+  if (scope === 'user') {
+    const legacyPath = path.join(targetDir, 'user-memory.md');
+    const assessPath = path.join(targetDir, 'ASSESSMENT.md');
+    const reqPath = path.join(targetDir, 'REQUIREMENTS.md');
+
+    if (fs.existsSync(legacyPath) && fs.statSync(legacyPath).isFile()) {
+      if (!fs.existsSync(assessPath)) {
+        writeFileSyncSafe(assessPath, getAssessmentTemplate(), false);
+      }
+      if (!fs.existsSync(reqPath)) {
+        writeFileSyncSafe(reqPath, getRequirementsTemplate(), false);
+      }
+      return true;
     }
-    return true;
+  } else {
+    const legacyPath = path.join(targetDir, 'project-memory.md');
+    const assessPath = path.join(targetDir, 'ASSESSMENT.md');
+    const reqPath = path.join(targetDir, 'REQUIREMENTS.md');
+
+    if (fs.existsSync(legacyPath) && fs.statSync(legacyPath).isFile()) {
+      if (!fs.existsSync(reqPath)) {
+        writeFileSyncSafe(reqPath, getRequirementsTemplate(), false);
+      }
+      if (!fs.existsSync(assessPath)) {
+        writeFileSyncSafe(assessPath, getAssessmentTemplate(), false);
+      }
+      return true;
+    }
   }
   return false;
+}
+
+function ensureUserMemory(homeDir, dryRun) {
+  const configDir = getUserConfigDir(homeDir);
+  const assessPath = getUserAssessmentPath(homeDir);
+  const reqPath = getUserRequirementsPath(homeDir);
+
+  const legacyMem = getUserMemoryPath(homeDir);
+  if (fs.existsSync(legacyMem) && (!fs.existsSync(assessPath) || !fs.existsSync(reqPath))) {
+    if (!dryRun) {
+      migrateLegacyMemory(configDir, 'user');
+      console.log(`Migrated legacy user memory to ASSESSMENT.md and REQUIREMENTS.md`);
+    }
+  }
+
+  let created = false;
+  if (!fs.existsSync(assessPath)) {
+    if (dryRun) {
+      console.log(`[dry-run] Would initialize assessment memory: ${assessPath}`);
+    } else {
+      writeFileSyncSafe(assessPath, getAssessmentTemplate(), false);
+      console.log(`Initialized assessment memory: ${assessPath}`);
+    }
+    created = true;
+  }
+
+  if (!fs.existsSync(reqPath)) {
+    if (dryRun) {
+      console.log(`[dry-run] Would initialize requirements memory: ${reqPath}`);
+    } else {
+      writeFileSyncSafe(reqPath, getRequirementsTemplate(), false);
+      console.log(`Initialized requirements memory: ${reqPath}`);
+    }
+    created = true;
+  }
+
+  // Also maintain user-memory.md for legacy tools
+  if (!fs.existsSync(legacyMem)) {
+    if (!dryRun) {
+      writeFileSyncSafe(legacyMem, getUserMemoryTemplate(), false);
+    }
+  }
+
+  return created;
 }
 
 function printMemoryHelp() {
@@ -129,17 +290,130 @@ function printMemoryHelp() {
 Grill-Plan-Team Two-Tier Memory CLI
 
 Usage:
-  npx grill-plan-team memory init [--project | --user]
-  npx grill-plan-team memory show [--project | --user]
-  npx grill-plan-team memory path [--project | --user]
+  npx grill-plan-team memory init [assessment | requirements] [--project | --user]
+  npx grill-plan-team memory show [assessment | requirements] [--project | --user]
+  npx grill-plan-team memory path [assessment | requirements] [--project | --user]
+  npx grill-plan-team assess [--project | --user]
 
 Options:
-  --user, -u          Target global user memory (~/.config/grill-plan-team/user-memory.md) (default)
-  --project, -p       Target local project memory (.grill-plan-team/project-memory.md)
+  --user, -u          Target global user memory (~/.config/grill-plan-team/) (default)
+  --project, -p       Target local project memory (.grill-plan-team/)
   --local, -l [path]  Target specific project directory for --project
   --force, -f         Force overwrite of existing memory file on init
   --help, -h          Show this help message
 `);
+}
+
+async function handleAssessCommand(args = []) {
+  let target = 'user';
+  let localPath = null;
+
+  let i = 0;
+  while (i < args.length) {
+    const a = args[i];
+    if (a === '--project' || a === '-p' || a === '--per-project') {
+      target = 'project';
+    } else if (a === '--user' || a === '-u' || a === '--user-global') {
+      target = 'user';
+    } else if (a === '--local' || a === '-l') {
+      if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+        localPath = path.resolve(args[i + 1].trim());
+        i++;
+      } else {
+        localPath = process.cwd();
+      }
+    }
+    i++;
+  }
+
+  const homeDir = getHomeDir();
+  const projDir = localPath || process.cwd();
+  const targetDir = target === 'project' ? getProjectConfigDir(projDir) : getUserConfigDir(homeDir);
+
+  if (!process.stdin.isTTY) {
+    const assessFile = path.join(targetDir, 'ASSESSMENT.md');
+    const reqFile = path.join(targetDir, 'REQUIREMENTS.md');
+    writeFileSyncSafe(assessFile, getAssessmentTemplate(), false);
+    writeFileSyncSafe(reqFile, getRequirementsTemplate(), false);
+    console.log(`[assess] Baseline memory initialized in ${target} scope:`);
+    console.log(`- ${assessFile}`);
+    console.log(`- ${reqFile}`);
+    return;
+  }
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const question = (q) => new Promise((res) => rl.question(q, res));
+
+  console.log('\n=== Grill-Plan-Team Baseline Assessment ===\n');
+  const scopeAns = await question('Where should preferences be saved? [1] User global (~/.config/grill-plan-team) [2] Project local (.grill-plan-team) [Default: 1]: ');
+  const selectedScope = scopeAns.trim() === '2' ? 'project' : 'user';
+  const finalDir = selectedScope === 'project' ? getProjectConfigDir(projDir) : getUserConfigDir(homeDir);
+
+  const role = (await question('Developer role and daily focus [Default: Software Engineer / Architect]: ')).trim() || 'Software Engineer / Architect';
+  const aiExp = (await question('Experience level with AI coding (Beginner / Intermediate / Advanced / Power User) [Default: Power User]: ')).trim() || 'Power User';
+  const guardrails = (await question('Key guardrails & constraints [Default: Zero runtime dependencies, non-breaking changes, test integrity]: ')).trim() || 'Zero runtime dependencies, non-breaking changes, test integrity';
+  const vcs = (await question('Preferred VCS tool & remote workflow [Default: GitHub CLI gh and standard git]: ')).trim() || 'GitHub CLI gh and standard git';
+  const languages = (await question('Preferred languages and test runner [Default: TypeScript, Node.js LTS, native node:test]: ')).trim() || 'TypeScript, Node.js LTS, native node:test';
+
+  rl.close();
+
+  const assessContent = `# Developer Assessment & Baseline Profile (grill-plan-team)
+
+Baseline assessment of developer role, daily work, AI experience level, and preferred collaboration style.
+
+## Developer Role & Daily Work
+- Primary role: ${role}.
+- Daily responsibilities: Full-stack system development, modular architecture, and autonomous workflow design.
+
+## AI Experience & Proficiency
+- AI proficiency level: ${aiExp}.
+- Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
+- Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
+
+## Collaboration & Communication Style
+- Preferred interaction cadence: Direct, concise, technical rationale first.
+- Decision format: Present structured multiple-choice recommendations with explicit trade-offs and citations.
+
+## Distilled User Preferences
+- Learned interaction habits: Prefers automated verification prior to certification.
+`;
+
+  const reqContent = `# Engineering Requirements & Technical Guardrails (grill-plan-team)
+
+Technical guardrails, VCS workflows, language and library preferences, architectural records, and reviewer lessons.
+
+## Guardrails & Safety
+- Guardrails: ${guardrails}.
+- Test integrity: Never bypass, weaken, skip, or mock tests to achieve a passing state.
+
+## VCS & Repository Processes
+- Preferred VCS tool: ${vcs}.
+- Remote providers: GitHub (primary), GitLab, Bitbucket.
+- Branching & commits: Clean commit messages following conventional commits; local verification before push.
+
+## Preferred Languages & Runtimes
+- Primary languages & runtimes: ${languages}.
+- Typing: Strict TypeScript compilation with noEmit type checking where applicable.
+
+## Architectural Decision History
+- [Initial Baseline]: Established baseline developer requirements.
+
+## Past Pitfalls & Reviewer Lessons
+- Verification first: Run objective programmatic tests before completing tasks.
+`;
+
+  const assessFile = path.join(finalDir, 'ASSESSMENT.md');
+  const reqFile = path.join(finalDir, 'REQUIREMENTS.md');
+  writeFileSyncSafe(assessFile, assessContent, false);
+  writeFileSyncSafe(reqFile, reqContent, false);
+
+  console.log(`\nBaseline assessment saved successfully!`);
+  console.log(`- ${assessFile}`);
+  console.log(`- ${reqFile}`);
 }
 
 function handleMemoryCommand(args) {
@@ -149,6 +423,11 @@ function handleMemoryCommand(args) {
     return;
   }
 
+  if (subcmd === 'assess') {
+    return handleAssessCommand(args.slice(1));
+  }
+
+  let docType = null;
   let target = 'user';
   let localPath = null;
   let force = false;
@@ -156,7 +435,13 @@ function handleMemoryCommand(args) {
   let i = 1;
   while (i < args.length) {
     const a = args[i];
-    if (a === '--project' || a === '-p' || a === '--per-project' || a === '-project' || a === '-per-project') {
+    if (a === 'assessment' || a === 'assess' || a === 'profile') {
+      docType = 'assessment';
+    } else if (a === 'requirements' || a === 'req' || a === 'guardrails') {
+      docType = 'requirements';
+    } else if (a === 'legacy') {
+      docType = 'legacy';
+    } else if (a === '--project' || a === '-p' || a === '--per-project' || a === '-project' || a === '-per-project') {
       target = 'project';
     } else if (a === '--user' || a === '-u' || a === '-user' || a === '--user-global' || a === '-user-global') {
       target = 'user';
@@ -190,50 +475,84 @@ function handleMemoryCommand(args) {
 
   switch (subcmd) {
     case 'path': {
-      if (target === 'project') {
-        console.log(getProjectMemoryPath(projDir));
+      if (docType === 'assessment') {
+        console.log(target === 'project' ? getProjectAssessmentPath(projDir) : getUserAssessmentPath(homeDir));
+      } else if (docType === 'requirements') {
+        console.log(target === 'project' ? getProjectRequirementsPath(projDir) : getUserRequirementsPath(homeDir));
+      } else if (docType === 'legacy') {
+        console.log(target === 'project' ? getProjectMemoryPath(projDir) : getUserMemoryPath(homeDir));
       } else {
-        console.log(getUserMemoryPath(homeDir));
+        // When docType omitted: return assessment for user, requirements for project
+        console.log(target === 'project' ? getProjectRequirementsPath(projDir) : getUserAssessmentPath(homeDir));
       }
       break;
     }
 
     case 'init': {
-      if (target === 'project') {
-        const memPath = getProjectMemoryPath(projDir);
-        if (fs.existsSync(memPath) && !fs.statSync(memPath).isFile()) {
-          console.error(`Error: Cannot initialize memory because a directory exists at ${memPath}.`);
-          process.exit(1);
-        }
-        if (fs.existsSync(memPath) && !force) {
-          console.log(`Project memory already exists at: ${memPath}`);
-        } else {
-          writeFileSyncSafe(memPath, getProjectMemoryTemplate(), false);
-          console.log(`Initialized project memory: ${memPath}`);
-        }
+      const configDir = target === 'project' ? getProjectConfigDir(projDir) : getUserConfigDir(homeDir);
+      migrateLegacyMemory(configDir, target);
+
+      const filesToInit = [];
+      if (docType === 'assessment') {
+        filesToInit.push({
+          path: target === 'project' ? getProjectAssessmentPath(projDir) : getUserAssessmentPath(homeDir),
+          template: getAssessmentTemplate(),
+          label: target === 'project' ? 'project assessment memory' : 'user assessment memory'
+        });
+      } else if (docType === 'requirements') {
+        filesToInit.push({
+          path: target === 'project' ? getProjectRequirementsPath(projDir) : getUserRequirementsPath(homeDir),
+          template: getRequirementsTemplate(),
+          label: target === 'project' ? 'project requirements memory' : 'user requirements memory'
+        });
       } else {
-        const memPath = getUserMemoryPath(homeDir);
-        if (fs.existsSync(memPath) && !fs.statSync(memPath).isFile()) {
-          console.error(`Error: Cannot initialize memory because a directory exists at ${memPath}.`);
+        filesToInit.push({
+          path: target === 'project' ? getProjectAssessmentPath(projDir) : getUserAssessmentPath(homeDir),
+          template: getAssessmentTemplate(),
+          label: target === 'project' ? 'project assessment memory' : 'user assessment memory'
+        });
+        filesToInit.push({
+          path: target === 'project' ? getProjectRequirementsPath(projDir) : getUserRequirementsPath(homeDir),
+          template: getRequirementsTemplate(),
+          label: target === 'project' ? 'project requirements memory' : 'user requirements memory'
+        });
+      }
+
+      for (const item of filesToInit) {
+        if (fs.existsSync(item.path) && !fs.statSync(item.path).isFile()) {
+          console.error(`Error: Cannot initialize memory because a directory exists at ${item.path}.`);
           process.exit(1);
         }
-        if (fs.existsSync(memPath) && !force) {
-          console.log(`User memory already exists at: ${memPath}`);
+        if (fs.existsSync(item.path) && !force) {
+          console.log(`${target === 'project' ? 'Project' : 'User'} memory already exists at: ${item.path}`);
         } else {
-          writeFileSyncSafe(memPath, getUserMemoryTemplate(), false);
-          console.log(`Initialized user memory: ${memPath}`);
+          writeFileSyncSafe(item.path, item.template, false);
+          console.log(`Initialized ${target === 'project' ? 'project' : 'user'} memory: ${item.path}`);
         }
       }
       break;
     }
 
     case 'show': {
-      const memPath = target === 'project' ? getProjectMemoryPath(projDir) : getUserMemoryPath(homeDir);
-      if (!fs.existsSync(memPath) || !fs.statSync(memPath).isFile()) {
-        console.error(`Error: ${target === 'project' ? 'Project' : 'User'} memory file not found at ${memPath}.`);
-        process.exit(1);
+      let targetFile;
+      if (docType === 'assessment') {
+        targetFile = target === 'project' ? getProjectAssessmentPath(projDir) : getUserAssessmentPath(homeDir);
+      } else if (docType === 'requirements') {
+        targetFile = target === 'project' ? getProjectRequirementsPath(projDir) : getUserRequirementsPath(homeDir);
+      } else {
+        targetFile = target === 'project' ? getProjectRequirementsPath(projDir) : getUserAssessmentPath(homeDir);
       }
-      process.stdout.write(fs.readFileSync(memPath, 'utf8'));
+
+      if (!fs.existsSync(targetFile) || !fs.statSync(targetFile).isFile()) {
+        const legacyFile = target === 'project' ? getProjectMemoryPath(projDir) : getUserMemoryPath(homeDir);
+        if (fs.existsSync(legacyFile) && fs.statSync(legacyFile).isFile()) {
+          targetFile = legacyFile;
+        } else {
+          console.error(`Error: ${target === 'project' ? 'Project' : 'User'} memory file not found at ${targetFile}.`);
+          process.exit(1);
+        }
+      }
+      process.stdout.write(fs.readFileSync(targetFile, 'utf8'));
       break;
     }
 
@@ -644,6 +963,11 @@ async function promptHarnesses(detected) {
 }
 
 async function run(cliArgs = process.argv.slice(2)) {
+  if (cliArgs.length > 0 && cliArgs[0] === 'assess') {
+    await handleAssessCommand(cliArgs.slice(1));
+    return;
+  }
+
   if (cliArgs.length > 0 && cliArgs[0] === 'memory') {
     handleMemoryCommand(cliArgs.slice(1));
     return;
@@ -771,8 +1095,10 @@ async function run(cliArgs = process.argv.slice(2)) {
 
       // Memory preservation / purge handling
       if (options.purge) {
-        if (options.isGlobal) {
-          const userMem = getUserMemoryPath(baseDir);
+        const memFiles = options.isGlobal
+          ? [getUserAssessmentPath(baseDir), getUserRequirementsPath(baseDir), getUserMemoryPath(baseDir)]
+          : [getProjectAssessmentPath(baseDir), getProjectRequirementsPath(baseDir), getProjectMemoryPath(baseDir)];
+        for (const userMem of memFiles) {
           if (fs.existsSync(userMem) && fs.statSync(userMem).isFile()) {
             try {
               fs.unlinkSync(userMem);
@@ -785,28 +1111,18 @@ async function run(cliArgs = process.argv.slice(2)) {
               console.error(`Failed to remove ${userMem}: ${err.message}`);
             }
           }
-        } else {
-          const projMem = getProjectMemoryPath(baseDir);
-          if (fs.existsSync(projMem) && fs.statSync(projMem).isFile()) {
-            try {
-              fs.unlinkSync(projMem);
-              console.log(`Purged: ${projMem}`);
-              const projDir = path.dirname(projMem);
-              if (fs.existsSync(projDir) && fs.readdirSync(projDir).length === 0) {
-                fs.rmdirSync(projDir);
-              }
-            } catch (err) {
-              console.error(`Failed to remove ${projMem}: ${err.message}`);
-            }
-          }
         }
       } else {
         console.log('[memory] Preserved user memory files (use --purge to delete)');
       }
     } else if (options.purge) {
-      const memToPurge = options.isGlobal ? getUserMemoryPath(baseDir) : getProjectMemoryPath(baseDir);
-      if (fs.existsSync(memToPurge) && fs.statSync(memToPurge).isFile()) {
-        console.log(`[dry-run] Would purge: ${memToPurge}`);
+      const memFiles = options.isGlobal
+        ? [getUserAssessmentPath(baseDir), getUserRequirementsPath(baseDir), getUserMemoryPath(baseDir)]
+        : [getProjectAssessmentPath(baseDir), getProjectRequirementsPath(baseDir), getProjectMemoryPath(baseDir)];
+      for (const memToPurge of memFiles) {
+        if (fs.existsSync(memToPurge) && fs.statSync(memToPurge).isFile()) {
+          console.log(`[dry-run] Would purge: ${memToPurge}`);
+        }
       }
     }
 
@@ -889,13 +1205,25 @@ module.exports = {
   HARNESS_DISPLAY_NAMES,
   DEFAULT_USER_MEMORY,
   DEFAULT_PROJECT_MEMORY,
+  DEFAULT_ASSESSMENT_TEMPLATE,
+  DEFAULT_REQUIREMENTS_TEMPLATE,
   getHomeDir,
+  getUserConfigDir,
+  getUserAssessmentPath,
+  getUserRequirementsPath,
   getUserMemoryPath,
+  getProjectConfigDir,
+  getProjectAssessmentPath,
+  getProjectRequirementsPath,
   getProjectMemoryPath,
+  getAssessmentTemplate,
+  getRequirementsTemplate,
   getUserMemoryTemplate,
   getProjectMemoryTemplate,
+  migrateLegacyMemory,
   ensureUserMemory,
   handleMemoryCommand,
+  handleAssessCommand,
   parseArgs,
   detectInstalledHarnesses,
   getHarnessFileMappings,

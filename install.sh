@@ -80,68 +80,88 @@ get_file_content() {
 get_memory_template() {
   local kind="$1"
   local content=""
-  if [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/templates/memory/${kind}-memory.md" ]; then
-    cat "$REPO_DIR/templates/memory/${kind}-memory.md"
+  local filename="${kind}.md"
+  if [ "$kind" = "user" ] || [ "$kind" = "project" ]; then
+    filename="${kind}-memory.md"
+  elif [ "$kind" = "assessment" ]; then
+    filename="ASSESSMENT.md"
+  elif [ "$kind" = "requirements" ]; then
+    filename="REQUIREMENTS.md"
+  fi
+
+  if [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/templates/memory/${filename}" ]; then
+    cat "$REPO_DIR/templates/memory/${filename}"
     return
   fi
   if command -v curl >/dev/null 2>&1; then
-    content="$(curl -fsSL "${RAW_BASE}/templates/memory/${kind}-memory.md" 2>/dev/null || true)"
+    content="$(curl -fsSL "${RAW_BASE}/templates/memory/${filename}" 2>/dev/null || true)"
   elif command -v wget >/dev/null 2>&1; then
-    content="$(wget -qO- "${RAW_BASE}/templates/memory/${kind}-memory.md" 2>/dev/null || true)"
+    content="$(wget -qO- "${RAW_BASE}/templates/memory/${filename}" 2>/dev/null || true)"
   fi
   if [ -n "$content" ]; then
     printf "%s\n" "$content"
     return
   fi
 
-  if [ "$kind" = "user" ]; then
+  if [ "$kind" = "assessment" ] || [ "$kind" = "user" ]; then
     cat << 'EOF'
-# Global User Memory (grill-plan-team)
+# Developer Assessment & Baseline Profile (grill-plan-team)
 
-Personal developer profile and global engineering preferences across all projects.
+Baseline assessment of developer role, daily work, AI experience level, and preferred collaboration style.
 
-## Developer Profile & Interaction Style
-- Preferred interaction cadence: direct, concise, technical rationale first.
-- Decision preference: present structured multiple-choice recommendations with trade-offs.
+## Developer Role & Daily Work
+- Primary role: Software Engineer / Architect.
+- Daily responsibilities: Full-stack system development, modular architecture, and autonomous workflow design.
+- Target domains: Developer tooling, agentic pipelines, cross-platform CLI applications.
 
-## Preferred Tech Stacks & Tooling
-- Architecture: modular, minimal runtime dependencies, clean interface boundaries.
-- Runtime & language preferences: modern LTS Node.js / TypeScript / native tooling where applicable.
-- Testing preference: native test runners (e.g. node:test), zero unnecessary testing frameworks.
+## AI Experience & Proficiency
+- AI proficiency level: Advanced / Power User.
+- Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
+- Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
 
-## Architectural Heuristics
-- Single Responsibility & High Cohesion: keep diffs focused on the exact requested requirement.
-- Defensive boundaries: validate inputs at integration seams, keep core logic free of external bloat.
-- Self-contained systems: prefer standalone scripts and zero-dependency utilities.
+## Collaboration & Communication Style
+- Preferred interaction cadence: Direct, concise, technical rationale first.
+- Decision format: Present structured multiple-choice recommendations with explicit trade-offs and citations.
+- Explanations: Keep UI options concise; provide expanded technical deep dives when requested.
 
-## Workflow Habits & Overrides
-- Prioritize non-breaking changes and backward compatibility.
-- Ensure thorough automated verification before certifying changes.
+## Distilled User Preferences
+- Learned interaction habits: Prefers automated verification prior to certification.
+- Workflow feedback: Value clean commits, high cohesion, and zero unnecessary dependencies.
 EOF
   else
     cat << 'EOF'
-# Local Project Memory (grill-plan-team)
+# Engineering Requirements & Technical Guardrails (grill-plan-team)
 
-Repository-specific context, conventions, architectural decisions, and learned lessons.
+Technical guardrails, VCS workflows, language and library preferences, architectural records, and reviewer lessons.
 
-## Project Archetype & Domain Terminology
-- Archetype: Cross-harness AI agent workflow engine and installer CLI.
-- Domain terms:
-  - Harness: Target IDE or coding agent host (Antigravity, Claude Code, Cursor, Windsurf, Roo Code).
-  - 3-Phase Gate: Grill-Me (interview) -> Plan (blueprint) -> Teamwork (execution).
-  - Two-Tier Memory: Global user profile (~/.config/grill-plan-team) + local project memory (.grill-plan-team).
+## Guardrails & Safety
+- Dependency policy: Zero external runtime dependencies; prioritize native runtime APIs (Node.js built-ins, standard libraries).
+- Test integrity: Never bypass, weaken, skip, or mock tests to achieve a passing state; run comprehensive test suites.
+- Safety boundaries: Defensive validation at integration seams; no destructive operations or unapproved force-pushes.
+- Compatibility: Maintain strict backward compatibility and non-breaking changes across releases.
 
-## Established Repository Conventions
-- Dependencies: Zero external runtime dependencies; use native Node.js / POSIX bash APIs.
-- Testing: node:test with strict parity testing between install.sh and bin/install.js.
-- Governance: Gated phase progression; changes committed cleanly to git.
+## VCS & Repository Processes
+- Preferred VCS tool: Official GitHub CLI (`gh`) and standard `git`.
+- Remote providers: GitHub (primary), with support for GitLab, Bitbucket, and custom git origins.
+- Branching & commits: Clean commit messages following conventional commits; local verification before push.
+- PR & review process: Structured descriptions, verification proof, and automated CI passing checks.
+
+## Preferred Languages & Runtimes
+- Primary languages: TypeScript, modern JavaScript (ESM/CJS), Bash/POSIX shell, Python.
+- Runtimes: Modern Node.js LTS (v20+, v22+), standard shell environments.
+- Typing: Strict TypeScript compilation with `noEmit` type checking.
+
+## Preferred Libraries & Frameworks
+- Test frameworks: Native test runner (`node:test`, `node:assert`), zero heavy testing framework bloat.
+- CLI & scripting: Built-in `child_process`, `fs`, `path`, `os`, and standard POSIX shell tools.
 
 ## Architectural Decision History
-- [Initial Bootstrap]: Established unified 3-phase gated pipeline with cross-harness parity.
+- [Initial Bootstrap]: Established unified 4-phase gated pipeline with cross-harness parity.
 
 ## Past Pitfalls & Reviewer Lessons
-- Parity requirement: Any CLI or template change must be mirrored across both bin/install.js and install.sh.
+- Parity requirement: Any CLI or template change must be mirrored across both `bin/install.js` and `install.sh`.
 - Path normalization: Always resolve paths and trim whitespace when handling user inputs.
+- Cross-harness compatibility: Do not bind phase execution to proprietary subagent names.
 EOF
   fi
 }
@@ -151,18 +171,71 @@ print_memory_help() {
 Grill-Plan-Team Two-Tier Memory CLI
 
 Usage:
-  ./install.sh memory init [--project | --user]
-  ./install.sh memory show [--project | --user]
-  ./install.sh memory path [--project | --user]
+  ./install.sh memory init [assessment | requirements] [--project | --user]
+  ./install.sh memory show [assessment | requirements] [--project | --user]
+  ./install.sh memory path [assessment | requirements] [--project | --user]
+  ./install.sh assess [--project | --user]
 
 Options:
-  --user, -u          Target global user memory (~/.config/grill-plan-team/user-memory.md) (default)
-  --project, -p       Target local project memory (.grill-plan-team/project-memory.md)
+  --user, -u          Target global user memory (~/.config/grill-plan-team/) (default)
+  --project, -p       Target local project memory (.grill-plan-team/)
   --local, -l [path]  Target specific project directory for --project
   --force, -f         Force overwrite of existing memory file on init
   --help, -h          Show this help message
 EOF
 }
+
+# Handle assess command if requested
+if [ "${1:-}" = "assess" ]; then
+  shift
+  assess_target="user"
+  assess_local_path=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --user|-u|--user-global)
+        assess_target="user"
+        shift
+        ;;
+      --project|-p|--per-project)
+        assess_target="project"
+        shift
+        ;;
+      --local|-l)
+        if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
+          assess_local_path="$(normalize_path "$2")"
+          shift 2
+        else
+          assess_local_path="$(pwd)"
+          shift
+        fi
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+
+  a_home="${HOME%/}"
+  a_base="${assess_local_path:-$(pwd)}"
+  a_base="${a_base%/}"
+  xdg_conf="${XDG_CONFIG_HOME:-$a_home/.config}"
+  xdg_conf="${xdg_conf%/}"
+
+  if [ "$assess_target" = "project" ]; then
+    out_dir="${a_base}/.grill-plan-team"
+  else
+    out_dir="${xdg_conf}/grill-plan-team"
+  fi
+  mkdir -p "$out_dir"
+  assess_content="$(get_memory_template "assessment")"
+  req_content="$(get_memory_template "requirements")"
+  printf "%s\n" "$assess_content" > "$out_dir/ASSESSMENT.md"
+  printf "%s\n" "$req_content" > "$out_dir/REQUIREMENTS.md"
+  echo "[assess] Baseline memory initialized in $assess_target scope:"
+  echo "- $out_dir/ASSESSMENT.md"
+  echo "- $out_dir/REQUIREMENTS.md"
+  exit 0
+fi
 
 # Handle memory subcommand if requested
 if [ "${1:-}" = "memory" ]; then
@@ -173,6 +246,19 @@ if [ "${1:-}" = "memory" ]; then
     exit 0
   fi
   shift
+
+  doc_type=""
+  if [ "${1:-}" = "assessment" ] || [ "${1:-}" = "assess" ] || [ "${1:-}" = "profile" ]; then
+    doc_type="assessment"
+    shift
+  elif [ "${1:-}" = "requirements" ] || [ "${1:-}" = "req" ] || [ "${1:-}" = "guardrails" ]; then
+    doc_type="requirements"
+    shift
+  elif [ "${1:-}" = "legacy" ]; then
+    doc_type="legacy"
+    shift
+  fi
+
   mem_target="user"
   mem_local_path=""
   mem_force=0
@@ -225,54 +311,131 @@ if [ "${1:-}" = "memory" ]; then
 
   case "$subcmd" in
     path)
-      if [ "$mem_target" = "project" ]; then
-        echo "${mem_base}/.grill-plan-team/project-memory.md"
+      if [ "$doc_type" = "assessment" ]; then
+        if [ "$mem_target" = "project" ]; then
+          echo "${mem_base}/.grill-plan-team/ASSESSMENT.md"
+        else
+          echo "${xdg_conf}/grill-plan-team/ASSESSMENT.md"
+        fi
+      elif [ "$doc_type" = "requirements" ]; then
+        if [ "$mem_target" = "project" ]; then
+          echo "${mem_base}/.grill-plan-team/REQUIREMENTS.md"
+        else
+          echo "${xdg_conf}/grill-plan-team/REQUIREMENTS.md"
+        fi
+      elif [ "$doc_type" = "legacy" ]; then
+        if [ "$mem_target" = "project" ]; then
+          echo "${mem_base}/.grill-plan-team/project-memory.md"
+        else
+          echo "${xdg_conf}/grill-plan-team/user-memory.md"
+        fi
       else
-        echo "${xdg_conf}/grill-plan-team/user-memory.md"
+        if [ "$mem_target" = "project" ]; then
+          echo "${mem_base}/.grill-plan-team/REQUIREMENTS.md"
+        else
+          echo "${xdg_conf}/grill-plan-team/ASSESSMENT.md"
+        fi
       fi
       exit 0
       ;;
     init)
       if [ "$mem_target" = "project" ]; then
-        target_file="${mem_base}/.grill-plan-team/project-memory.md"
-        if [ -d "$target_file" ]; then
-          echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
-          exit 1
+        config_dir="${mem_base}/.grill-plan-team"
+        mkdir -p "$config_dir"
+        
+        # Auto-migrate legacy if exists
+        if [ -f "$config_dir/project-memory.md" ]; then
+          if [ ! -f "$config_dir/REQUIREMENTS.md" ]; then
+            printf "%s\n" "$(get_memory_template "requirements")" > "$config_dir/REQUIREMENTS.md"
+          fi
+          if [ ! -f "$config_dir/ASSESSMENT.md" ]; then
+            printf "%s\n" "$(get_memory_template "assessment")" > "$config_dir/ASSESSMENT.md"
+          fi
         fi
-        if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
-          echo "Project memory already exists at: $target_file"
+
+        if [ "$doc_type" = "assessment" ]; then
+          files_to_init=("$config_dir/ASSESSMENT.md:assessment")
+        elif [ "$doc_type" = "requirements" ]; then
+          files_to_init=("$config_dir/REQUIREMENTS.md:requirements")
         else
-          content="$(get_memory_template "project")"
-          mkdir -p "$(dirname "$target_file")"
-          printf "%s\n" "$content" > "$target_file"
-          echo "Initialized project memory: $target_file"
+          files_to_init=("$config_dir/ASSESSMENT.md:assessment" "$config_dir/REQUIREMENTS.md:requirements")
         fi
+
+        for item in "${files_to_init[@]}"; do
+          target_file="${item%%:*}"
+          kind="${item##*:}"
+          if [ -d "$target_file" ]; then
+            echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
+            exit 1
+          fi
+          if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
+            echo "Project memory already exists at: $target_file"
+          else
+            content="$(get_memory_template "$kind")"
+            mkdir -p "$(dirname "$target_file")"
+            printf "%s\n" "$content" > "$target_file"
+            echo "Initialized project memory: $target_file"
+          fi
+        done
       else
-        target_file="${xdg_conf}/grill-plan-team/user-memory.md"
-        if [ -d "$target_file" ]; then
-          echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
-          exit 1
+        config_dir="${xdg_conf}/grill-plan-team"
+        mkdir -p "$config_dir"
+
+        # Auto-migrate legacy if exists
+        if [ -f "$config_dir/user-memory.md" ]; then
+          if [ ! -f "$config_dir/ASSESSMENT.md" ]; then
+            printf "%s\n" "$(get_memory_template "assessment")" > "$config_dir/ASSESSMENT.md"
+          fi
+          if [ ! -f "$config_dir/REQUIREMENTS.md" ]; then
+            printf "%s\n" "$(get_memory_template "requirements")" > "$config_dir/REQUIREMENTS.md"
+          fi
         fi
-        if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
-          echo "User memory already exists at: $target_file"
+
+        if [ "$doc_type" = "assessment" ]; then
+          files_to_init=("$config_dir/ASSESSMENT.md:assessment")
+        elif [ "$doc_type" = "requirements" ]; then
+          files_to_init=("$config_dir/REQUIREMENTS.md:requirements")
         else
-          content="$(get_memory_template "user")"
-          mkdir -p "$(dirname "$target_file")"
-          printf "%s\n" "$content" > "$target_file"
-          echo "Initialized user memory: $target_file"
+          files_to_init=("$config_dir/ASSESSMENT.md:assessment" "$config_dir/REQUIREMENTS.md:requirements")
         fi
+
+        for item in "${files_to_init[@]}"; do
+          target_file="${item%%:*}"
+          kind="${item##*:}"
+          if [ -d "$target_file" ]; then
+            echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
+            exit 1
+          fi
+          if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
+            echo "User memory already exists at: $target_file"
+          else
+            content="$(get_memory_template "$kind")"
+            mkdir -p "$(dirname "$target_file")"
+            printf "%s\n" "$content" > "$target_file"
+            echo "Initialized user memory: $target_file"
+          fi
+        done
       fi
       exit 0
       ;;
     show)
-      if [ "$mem_target" = "project" ]; then
-        target_file="${mem_base}/.grill-plan-team/project-memory.md"
+      if [ "$doc_type" = "assessment" ]; then
+        target_file="$([ "$mem_target" = "project" ] && echo "${mem_base}/.grill-plan-team/ASSESSMENT.md" || echo "${xdg_conf}/grill-plan-team/ASSESSMENT.md")"
+      elif [ "$doc_type" = "requirements" ]; then
+        target_file="$([ "$mem_target" = "project" ] && echo "${mem_base}/.grill-plan-team/REQUIREMENTS.md" || echo "${xdg_conf}/grill-plan-team/REQUIREMENTS.md")"
       else
-        target_file="${xdg_conf}/grill-plan-team/user-memory.md"
+        target_file="$([ "$mem_target" = "project" ] && echo "${mem_base}/.grill-plan-team/REQUIREMENTS.md" || echo "${xdg_conf}/grill-plan-team/ASSESSMENT.md")"
       fi
+
       if [ ! -f "$target_file" ]; then
-        echo "Error: $([ "$mem_target" = "project" ] && echo "Project" || echo "User") memory file not found at $target_file." >&2
-        exit 1
+        # Fall back to legacy if present
+        legacy_file="$([ "$mem_target" = "project" ] && echo "${mem_base}/.grill-plan-team/project-memory.md" || echo "${xdg_conf}/grill-plan-team/user-memory.md")"
+        if [ -f "$legacy_file" ]; then
+          target_file="$legacy_file"
+        else
+          echo "Error: $([ "$mem_target" = "project" ] && echo "Project" || echo "User") memory file not found at $target_file." >&2
+          exit 1
+        fi
       fi
       cat "$target_file"
       exit 0
@@ -817,15 +980,17 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
     if [ "$IS_GLOBAL" -eq 1 ]; then
       t_dir="${TARGET_DIR%/}"
       xdg_conf="${XDG_CONFIG_HOME:-$t_dir/.config}"
-      PURGE_FILE="${xdg_conf%/}/grill-plan-team/user-memory.md"
-      if [ -f "$PURGE_FILE" ]; then
-        echo "[dry-run] Would purge: $PURGE_FILE"
-      fi
+      for pf in "${xdg_conf%/}/grill-plan-team/ASSESSMENT.md" "${xdg_conf%/}/grill-plan-team/REQUIREMENTS.md" "${xdg_conf%/}/grill-plan-team/user-memory.md"; do
+        if [ -f "$pf" ]; then
+          echo "[dry-run] Would purge: $pf"
+        fi
+      done
     else
-      PURGE_FILE="${TARGET_DIR%/}/.grill-plan-team/project-memory.md"
-      if [ -f "$PURGE_FILE" ]; then
-        echo "[dry-run] Would purge: $PURGE_FILE"
-      fi
+      for pf in "${TARGET_DIR%/}/.grill-plan-team/ASSESSMENT.md" "${TARGET_DIR%/}/.grill-plan-team/REQUIREMENTS.md" "${TARGET_DIR%/}/.grill-plan-team/project-memory.md"; do
+        if [ -f "$pf" ]; then
+          echo "[dry-run] Would purge: $pf"
+        fi
+      done
     fi
   fi
 
@@ -858,19 +1023,21 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
       if [ "$IS_GLOBAL" -eq 1 ]; then
         t_dir="${TARGET_DIR%/}"
         xdg_conf="${XDG_CONFIG_HOME:-$t_dir/.config}"
-        PURGE_FILE="${xdg_conf%/}/grill-plan-team/user-memory.md"
-        if [ -f "$PURGE_FILE" ]; then
-          rm -f "$PURGE_FILE"
-          echo "Purged: $PURGE_FILE"
-          rmdir "$(dirname "$PURGE_FILE")" 2>/dev/null || true
-        fi
+        for pf in "${xdg_conf%/}/grill-plan-team/ASSESSMENT.md" "${xdg_conf%/}/grill-plan-team/REQUIREMENTS.md" "${xdg_conf%/}/grill-plan-team/user-memory.md"; do
+          if [ -f "$pf" ]; then
+            rm -f "$pf"
+            echo "Purged: $pf"
+          fi
+        done
+        rmdir "${xdg_conf%/}/grill-plan-team" 2>/dev/null || true
       else
-        PURGE_FILE="${TARGET_DIR%/}/.grill-plan-team/project-memory.md"
-        if [ -f "$PURGE_FILE" ]; then
-          rm -f "$PURGE_FILE"
-          echo "Purged: $PURGE_FILE"
-          rmdir "$(dirname "$PURGE_FILE")" 2>/dev/null || true
-        fi
+        for pf in "${TARGET_DIR%/}/.grill-plan-team/ASSESSMENT.md" "${TARGET_DIR%/}/.grill-plan-team/REQUIREMENTS.md" "${TARGET_DIR%/}/.grill-plan-team/project-memory.md"; do
+          if [ -f "$pf" ]; then
+            rm -f "$pf"
+            echo "Purged: $pf"
+          fi
+        done
+        rmdir "${TARGET_DIR%/}/.grill-plan-team" 2>/dev/null || true
       fi
     else
       echo "[memory] Preserved user memory files (use --purge to delete)"
@@ -1002,15 +1169,35 @@ if [ "$IS_GLOBAL" -eq 0 ]; then
   target_home="${HOME%/}"
 fi
 xdg_conf="${XDG_CONFIG_HOME:-$target_home/.config}"
-user_mem_file="${xdg_conf%/}/grill-plan-team/user-memory.md"
-if [ ! -f "$user_mem_file" ]; then
+mem_dir="${xdg_conf%/}/grill-plan-team"
+assess_file="${mem_dir}/ASSESSMENT.md"
+req_file="${mem_dir}/REQUIREMENTS.md"
+legacy_file="${mem_dir}/user-memory.md"
+
+if [ ! -f "$assess_file" ]; then
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "[dry-run] Would initialize global user memory: $user_mem_file"
+    echo "[dry-run] Would initialize assessment memory: $assess_file"
   else
-    mkdir -p "$(dirname "$user_mem_file")"
-    content="$(get_memory_template "user")"
-    printf "%s\n" "$content" > "$user_mem_file"
-    echo "Initialized user memory: $user_mem_file"
+    mkdir -p "$mem_dir"
+    printf "%s\n" "$(get_memory_template "assessment")" > "$assess_file"
+    echo "Initialized assessment memory: $assess_file"
+  fi
+fi
+
+if [ ! -f "$req_file" ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[dry-run] Would initialize requirements memory: $req_file"
+  else
+    mkdir -p "$mem_dir"
+    printf "%s\n" "$(get_memory_template "requirements")" > "$req_file"
+    echo "Initialized requirements memory: $req_file"
+  fi
+fi
+
+if [ ! -f "$legacy_file" ]; then
+  if [ "$DRY_RUN" -eq 0 ]; then
+    mkdir -p "$mem_dir"
+    printf "%s\n" "$(get_memory_template "user")" > "$legacy_file"
   fi
 fi
 
