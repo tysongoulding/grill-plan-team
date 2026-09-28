@@ -146,11 +146,11 @@ if [ "${1:-}" = "memory" ]; then
 
   while [ $# -gt 0 ]; do
     case "$1" in
-      --user|-u)
+      --user|-u|-user)
         mem_target="user"
         shift
         ;;
-      --project|-p)
+      --project|-p|--per-project)
         mem_target="project"
         shift
         ;;
@@ -160,7 +160,17 @@ if [ "${1:-}" = "memory" ]; then
         ;;
       --local|-l)
         if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
-          mem_local_path="$(echo "$2" | xargs)"
+          raw_val="$(echo "$2" | xargs)"
+          raw_val="${raw_val%/}"
+          if [ -z "$raw_val" ] || [ "$raw_val" = "." ]; then
+            mem_local_path="$(pwd)"
+          elif [ -d "$raw_val" ]; then
+            mem_local_path="$(cd "$raw_val" 2>/dev/null && pwd)"
+          elif [[ "$raw_val" = /* ]]; then
+            mem_local_path="$raw_val"
+          else
+            mem_local_path="$(pwd)/${raw_val#./}"
+          fi
           shift 2
         else
           mem_local_path="$(pwd)"
@@ -169,7 +179,17 @@ if [ "${1:-}" = "memory" ]; then
         ;;
       --local=*|-l=*)
         raw_val="${1#*=}"
-        mem_local_path="$(echo "$raw_val" | xargs)"
+        raw_target="$(echo "$raw_val" | xargs)"
+        raw_target="${raw_target%/}"
+        if [ -z "$raw_target" ] || [ "$raw_target" = "." ]; then
+          mem_local_path="$(pwd)"
+        elif [ -d "$raw_target" ]; then
+          mem_local_path="$(cd "$raw_target" 2>/dev/null && pwd)"
+        elif [[ "$raw_target" = /* ]]; then
+          mem_local_path="$raw_target"
+        else
+          mem_local_path="$(pwd)/${raw_target#./}"
+        fi
         shift
         ;;
       --help|-h)
@@ -227,7 +247,7 @@ if [ "${1:-}" = "memory" ]; then
         target_file="${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
       fi
       if [ ! -f "$target_file" ]; then
-        echo "Error: Memory file not found at $target_file" >&2
+        echo "Error: $([ "$mem_target" = "project" ] && echo "Project" || echo "User") memory file not found at $target_file." >&2
         exit 1
       fi
       cat "$target_file"

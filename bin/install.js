@@ -78,7 +78,15 @@ function getHomeDir() {
 }
 
 function getUserMemoryPath(homeDir = getHomeDir()) {
-  const configHome = process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+  const isDefaultHome = !homeDir || homeDir === getHomeDir();
+  let configHome;
+  if (!isDefaultHome) {
+    configHome = path.join(homeDir, '.config');
+  } else if (process.env.XDG_CONFIG_HOME) {
+    configHome = process.env.XDG_CONFIG_HOME;
+  } else {
+    configHome = path.join(homeDir || getHomeDir(), '.config');
+  }
   return path.join(configHome, 'grill-plan-team', 'user-memory.md');
 }
 
@@ -148,9 +156,9 @@ function handleMemoryCommand(args) {
   let i = 1;
   while (i < args.length) {
     const a = args[i];
-    if (a === '--project' || a === '-p') {
+    if (a === '--project' || a === '-p' || a === '--per-project') {
       target = 'project';
-    } else if (a === '--user' || a === '-u') {
+    } else if (a === '--user' || a === '-u' || a === '-user') {
       target = 'user';
     } else if (a === '--force' || a === '-f') {
       force = true;
@@ -788,6 +796,11 @@ async function run(cliArgs = process.argv.slice(2)) {
         }
       } else {
         console.log('[memory] Preserved user memory files (use --purge to delete)');
+      }
+    } else if (options.purge) {
+      const memToPurge = options.isGlobal ? getUserMemoryPath(baseDir) : getProjectMemoryPath(baseDir);
+      if (fs.existsSync(memToPurge)) {
+        console.log(`[dry-run] Would purge: ${memToPurge}`);
       }
     }
 

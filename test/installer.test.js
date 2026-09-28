@@ -385,7 +385,7 @@ describe('Node Installer CLI (bin/install.js)', () => {
       // Run global install with HOME overridden
       execFileSync('node', [BIN_INSTALL_JS, '--all'], {
         encoding: 'utf8',
-        env: { ...process.env, HOME: fakeHome }
+        env: { ...process.env, HOME: fakeHome, XDG_CONFIG_HOME: path.join(fakeHome, '.config') }
       });
 
       // Verify plugin installed
@@ -401,7 +401,7 @@ describe('Node Installer CLI (bin/install.js)', () => {
       // Run global uninstall with HOME overridden
       execFileSync('node', [BIN_INSTALL_JS, '--uninstall'], {
         encoding: 'utf8',
-        env: { ...process.env, HOME: fakeHome }
+        env: { ...process.env, HOME: fakeHome, XDG_CONFIG_HOME: path.join(fakeHome, '.config') }
       });
 
       // Verify plugin files removed
@@ -533,6 +533,14 @@ describe('Two-Tier Recursive Memory Engine', () => {
   let tmpDir;
   let fakeHome;
 
+  function getFakeEnv(homePath) {
+    return {
+      ...process.env,
+      HOME: homePath,
+      XDG_CONFIG_HOME: path.join(homePath, '.config')
+    };
+  }
+
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-mem-test-'));
     fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-fake-home-'));
@@ -575,7 +583,16 @@ describe('Two-Tier Recursive Memory Engine', () => {
       path.join(REPO_ROOT, '.cursor', 'rules', 'grill-plan-team.mdc'),
       path.join(REPO_ROOT, '.windsurfrules'),
       path.join(REPO_ROOT, '.roomodes'),
-      path.join(REPO_ROOT, '.clinerules')
+      path.join(REPO_ROOT, '.clinerules'),
+      path.join(REPO_ROOT, 'templates', 'antigravity', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'antigravity', 'rules', 'AGENTS.md'),
+      path.join(REPO_ROOT, 'templates', 'claude', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'templates', 'claude', 'commands', 'grill-plan-team.md'),
+      path.join(REPO_ROOT, 'templates', 'cursor', '.cursorrules'),
+      path.join(REPO_ROOT, 'templates', 'cursor', '.cursor', 'rules', 'grill-plan-team.mdc'),
+      path.join(REPO_ROOT, 'templates', 'windsurf', '.windsurfrules'),
+      path.join(REPO_ROOT, 'templates', 'roo', '.roomodes'),
+      path.join(REPO_ROOT, 'templates', 'roo', '.clinerules')
     ];
 
     for (const file of files) {
@@ -589,18 +606,37 @@ describe('Two-Tier Recursive Memory Engine', () => {
   });
 
   test('bin/install.js memory subcommands (path, init, show)', () => {
-    // memory path
+    // memory path with standard flags and aliases
     const userPathRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--user'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     }).trim();
     assert.strictEqual(userPathRes, path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md'));
+
+    const userAliasPathRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '-user'], {
+      encoding: 'utf8',
+      env: getFakeEnv(fakeHome)
+    }).trim();
+    assert.strictEqual(userAliasPathRes, userPathRes);
 
     const projPathRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project'], {
       encoding: 'utf8',
       cwd: tmpDir
     }).trim();
     assert.strictEqual(projPathRes, path.join(tmpDir, '.grill-plan-team', 'project-memory.md'));
+
+    const projAliasPathRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--per-project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projAliasPathRes, projPathRes);
+
+    // relative -l path resolution
+    const relSubRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project', '-l', './subtest'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(relSubRes, path.join(tmpDir, 'subtest', '.grill-plan-team', 'project-memory.md'));
 
     // memory init --project
     const initProjRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project'], {
@@ -624,7 +660,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     // memory init --user
     const initUserRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--user'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(initUserRes.includes('Initialized user memory'));
     const userMemFile = path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md');
@@ -635,7 +671,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     // memory show --user
     const showUserRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'show', '--user'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.strictEqual(showUserRes, userContent);
 
@@ -643,25 +679,44 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.throws(() => {
       execFileSync('node', [BIN_INSTALL_JS, 'memory', 'show', '--user'], {
         encoding: 'utf8',
-        env: { ...process.env, HOME: path.join(fakeHome, 'nonexistent') },
+        env: getFakeEnv(path.join(fakeHome, 'nonexistent')),
         stdio: 'pipe'
       });
     });
   });
 
   test('install.sh memory subcommands (path, init, show)', () => {
-    // memory path
+    // memory path with standard flags and aliases
     const userPathRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--user'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     }).trim();
     assert.strictEqual(userPathRes, path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md'));
+
+    const userAliasPathRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '-user'], {
+      encoding: 'utf8',
+      env: getFakeEnv(fakeHome)
+    }).trim();
+    assert.strictEqual(userAliasPathRes, userPathRes);
 
     const projPathRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project'], {
       encoding: 'utf8',
       cwd: tmpDir
     }).trim();
     assert.strictEqual(projPathRes, path.join(tmpDir, '.grill-plan-team', 'project-memory.md'));
+
+    const projAliasPathRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--per-project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projAliasPathRes, projPathRes);
+
+    // relative -l path resolution parity
+    const relSubRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project', '-l', './subtest'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(relSubRes, path.join(tmpDir, 'subtest', '.grill-plan-team', 'project-memory.md'));
 
     // memory init --project
     const initProjRes = execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--project'], {
@@ -685,7 +740,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     // memory init --user
     const initUserRes = execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--user'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(initUserRes.includes('Initialized user memory'));
     const userMemFile = path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md');
@@ -694,9 +749,51 @@ describe('Two-Tier Recursive Memory Engine', () => {
     // memory show --user
     const showUserRes = execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--user'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(showUserRes.includes('## Developer Profile & Interaction Style'));
+
+    // memory show on nonexistent file throws exit code 1
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--user'], {
+        encoding: 'utf8',
+        env: getFakeEnv(path.join(fakeHome, 'nonexistent')),
+        stdio: 'pipe'
+      });
+    });
+
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--project', '-l', path.join(tmpDir, 'nonexistent')], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+  });
+
+  test('install.sh and bin/install.js --dry-run --uninstall --purge parity', () => {
+    // Set up user memory
+    const userMem = path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md');
+    execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--user'], {
+      encoding: 'utf8',
+      env: getFakeEnv(fakeHome)
+    });
+    assert.ok(fs.existsSync(userMem));
+
+    // Dry-run uninstall with purge on node
+    const nodeDryRes = execFileSync('node', [BIN_INSTALL_JS, '--uninstall', '--purge', '--dry-run'], {
+      encoding: 'utf8',
+      env: getFakeEnv(fakeHome)
+    });
+    assert.ok(nodeDryRes.includes('[dry-run] Would purge:'), 'node CLI reports dry-run purge');
+    assert.ok(fs.existsSync(userMem), 'file preserved during dry-run');
+
+    // Dry-run uninstall with purge on bash
+    const bashDryRes = execFileSync('bash', [INSTALL_SH, '--uninstall', '--purge', '--dry-run'], {
+      encoding: 'utf8',
+      env: getFakeEnv(fakeHome)
+    });
+    assert.ok(bashDryRes.includes('[dry-run] Would purge:'), 'install.sh reports dry-run purge');
+    assert.ok(fs.existsSync(userMem), 'file preserved during dry-run');
   });
 
   test('Auto-initialization on global install and preservation on uninstall without --purge', () => {
@@ -705,7 +802,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     // Run global install with node CLI
     execFileSync('node', [BIN_INSTALL_JS, '--all'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(fs.existsSync(userMem), 'user-memory.md was auto-initialized by bin/install.js');
 
@@ -715,7 +812,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     // Run uninstall without --purge
     execFileSync('node', [BIN_INSTALL_JS, '--uninstall'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(fs.existsSync(userMem), 'user-memory.md was preserved during uninstall without --purge');
     assert.ok(fs.readFileSync(userMem, 'utf8').includes('Custom user preference 123'));
@@ -723,28 +820,28 @@ describe('Two-Tier Recursive Memory Engine', () => {
     // Run uninstall with --purge
     execFileSync('node', [BIN_INSTALL_JS, '--uninstall', '--purge'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(!fs.existsSync(userMem), 'user-memory.md was removed during uninstall with --purge');
 
     // Repeat verification with install.sh
     execFileSync('bash', [INSTALL_SH, '--all'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(fs.existsSync(userMem), 'user-memory.md was auto-initialized by install.sh');
 
     // Uninstall without --purge
     execFileSync('bash', [INSTALL_SH, '--uninstall'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(fs.existsSync(userMem), 'user-memory.md was preserved by install.sh without --purge');
 
     // Uninstall with --purge
     execFileSync('bash', [INSTALL_SH, '--uninstall', '--purge'], {
       encoding: 'utf8',
-      env: { ...process.env, HOME: fakeHome }
+      env: getFakeEnv(fakeHome)
     });
     assert.ok(!fs.existsSync(userMem), 'user-memory.md was removed by install.sh with --purge');
   });
@@ -752,20 +849,35 @@ describe('Two-Tier Recursive Memory Engine', () => {
   test('Local project uninstall preserves .grill-plan-team/project-memory.md unless --purge is passed', () => {
     const projMem = path.join(tmpDir, '.grill-plan-team', 'project-memory.md');
 
-    // Init project memory and install local harnesses
+    // Init project memory and install local harnesses with Node CLI
     execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project', '-l', tmpDir]);
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--all']);
     assert.ok(fs.existsSync(projMem));
     assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')));
 
-    // Uninstall without --purge
+    // Uninstall without --purge (node)
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--uninstall']);
     assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Harness files removed');
     assert.ok(fs.existsSync(projMem), 'Project memory preserved without --purge');
 
-    // Uninstall with --purge
+    // Uninstall with --purge (node)
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--uninstall', '--purge']);
     assert.ok(!fs.existsSync(projMem), 'Project memory removed with --purge');
+
+    // Re-test with install.sh
+    execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--project', '-l', tmpDir]);
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--all']);
+    assert.ok(fs.existsSync(projMem));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')));
+
+    // Uninstall without --purge (bash)
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--uninstall']);
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Harness files removed');
+    assert.ok(fs.existsSync(projMem), 'Project memory preserved by install.sh without --purge');
+
+    // Uninstall with --purge (bash)
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--uninstall', '--purge']);
+    assert.ok(!fs.existsSync(projMem), 'Project memory removed by install.sh with --purge');
   });
 });
 
