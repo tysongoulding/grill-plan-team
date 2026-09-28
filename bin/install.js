@@ -156,22 +156,24 @@ function handleMemoryCommand(args) {
   let i = 1;
   while (i < args.length) {
     const a = args[i];
-    if (a === '--project' || a === '-p' || a === '--per-project') {
+    if (a === '--project' || a === '-p' || a === '--per-project' || a === '-project' || a === '-per-project') {
       target = 'project';
-    } else if (a === '--user' || a === '-u' || a === '-user') {
+    } else if (a === '--user' || a === '-u' || a === '-user' || a === '--user-global' || a === '-user-global') {
       target = 'user';
     } else if (a === '--force' || a === '-f') {
       force = true;
     } else if (a === '--local' || a === '-l') {
-      if (args[i + 1] && !args[i + 1].startsWith('-')) {
-        localPath = path.resolve(args[i + 1]);
+      if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+        const raw = args[i + 1].trim();
+        localPath = raw ? path.resolve(raw) : process.cwd();
         i++;
       } else {
         localPath = process.cwd();
       }
     } else if (a.startsWith('--local=') || a.startsWith('-l=')) {
       const prefix = a.startsWith('--local=') ? '--local=' : '-l=';
-      localPath = path.resolve(a.slice(prefix.length).trim());
+      const val = a.slice(prefix.length).trim();
+      localPath = val ? path.resolve(val) : process.cwd();
     } else if (a === '--help' || a === '-h') {
       printMemoryHelp();
       return;
@@ -265,8 +267,9 @@ function parseArgs(args) {
       options.localPath = null;
     } else if (arg === '--local' || arg === '-l') {
       options.isGlobal = false;
-      if (args[i + 1] && !args[i + 1].startsWith('-') && args[i + 1].trim().length > 0) {
-        options.localPath = path.resolve(args[i + 1].trim());
+      if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+        const raw = args[i + 1].trim();
+        options.localPath = raw ? path.resolve(raw) : process.cwd();
         i++;
       } else {
         options.localPath = process.cwd();

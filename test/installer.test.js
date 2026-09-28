@@ -276,6 +276,15 @@ describe('Shell Installer (install.sh)', () => {
     assert.ok(res.includes('[dry-run] Would write'));
     assert.ok(res.includes(tmpDir));
   });
+
+  test('install.sh handles paths with apostrophes and empty -l correctly', () => {
+    const quoteDir = path.join(tmpDir, "alice's-project");
+    const res = execFileSync('bash', [INSTALL_SH, '--local', quoteDir, '-d'], { encoding: 'utf8' });
+    assert.ok(res.includes(`Target scope: ${quoteDir}`));
+
+    const emptyRes = execFileSync('bash', [INSTALL_SH, '-l', '', '-d'], { encoding: 'utf8', cwd: tmpDir });
+    assert.ok(emptyRes.includes(`Target scope: ${tmpDir}`));
+  });
 });
 
 describe('Node Installer CLI (bin/install.js)', () => {
@@ -472,6 +481,15 @@ describe('Node Installer CLI (bin/install.js)', () => {
     assert.ok(res.includes('[dry-run] Would write'));
     assert.ok(res.includes(tmpDir));
   });
+
+  test('bin/install.js handles paths with apostrophes and empty -l correctly', () => {
+    const quoteDir = path.join(tmpDir, "alice's-project");
+    const res = execFileSync('node', [BIN_INSTALL_JS, '--local', quoteDir, '-d'], { encoding: 'utf8' });
+    assert.ok(res.includes(`Target scope: ${quoteDir}`));
+
+    const emptyRes = execFileSync('node', [BIN_INSTALL_JS, '-l', '', '-d'], { encoding: 'utf8', cwd: tmpDir });
+    assert.ok(emptyRes.includes(`Target scope: ${tmpDir}`));
+  });
 });
 
 describe('Cross-Harness Parity & Byte Integrity', () => {
@@ -631,6 +649,45 @@ describe('Two-Tier Recursive Memory Engine', () => {
     }).trim();
     assert.strictEqual(projAliasPathRes, projPathRes);
 
+    const projSingleDashRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '-per-project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projSingleDashRes, projPathRes);
+
+    const projShortAliasRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '-project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projShortAliasRes, projPathRes);
+
+    // path with apostrophe/single quote and spaces
+    const quoteDir = path.join(tmpDir, "alice's-project");
+    const quotePathRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project', '-l', quoteDir], {
+      encoding: 'utf8'
+    }).trim();
+    assert.strictEqual(quotePathRes, path.join(quoteDir, '.grill-plan-team', 'project-memory.md'));
+
+    // empty and whitespace -l handling
+    const emptyLRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project', '-l', ''], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(emptyLRes, projPathRes);
+
+    const whitespaceLRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project', '-l', '   '], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(whitespaceLRes, projPathRes);
+
+    // XDG_CONFIG_HOME with trailing slash
+    const trailingXdgRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, XDG_CONFIG_HOME: path.join(fakeHome, '.config') + '/' }
+    }).trim();
+    assert.strictEqual(trailingXdgRes, userPathRes);
+
     // relative -l path resolution including .. dot-dot
     const relSubRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project', '-l', './subtest'], {
       encoding: 'utf8',
@@ -762,6 +819,45 @@ describe('Two-Tier Recursive Memory Engine', () => {
       cwd: tmpDir
     }).trim();
     assert.strictEqual(projAliasPathRes, projPathRes);
+
+    const projSingleDashRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '-per-project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projSingleDashRes, projPathRes);
+
+    const projShortAliasRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '-project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projShortAliasRes, projPathRes);
+
+    // path with apostrophe/single quote and spaces
+    const quoteDir = path.join(tmpDir, "alice's-project");
+    const quotePathRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project', '-l', quoteDir], {
+      encoding: 'utf8'
+    }).trim();
+    assert.strictEqual(quotePathRes, path.join(quoteDir, '.grill-plan-team', 'project-memory.md'));
+
+    // empty and whitespace -l handling
+    const emptyLRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project', '-l', ''], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(emptyLRes, projPathRes);
+
+    const whitespaceLRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project', '-l', '   '], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(whitespaceLRes, projPathRes);
+
+    // XDG_CONFIG_HOME with trailing slash
+    const trailingXdgRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, XDG_CONFIG_HOME: path.join(fakeHome, '.config') + '/' }
+    }).trim();
+    assert.strictEqual(trailingXdgRes, userPathRes);
 
     // relative -l path resolution parity including .. dot-dot
     const relSubRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project', '-l', './subtest'], {

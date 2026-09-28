@@ -28,7 +28,8 @@ fi
 # Normalize path resolving . and .. without requiring directory to exist
 normalize_path() {
   local p="${1:-}"
-  p="$(echo "$p" | xargs)"
+  p="${p#"${p%%[![:space:]]*}"}"
+  p="${p%"${p##*[![:space:]]}"}"
   if [ -z "$p" ] || [ "$p" = "." ]; then
     pwd
     return 0
@@ -178,11 +179,11 @@ if [ "${1:-}" = "memory" ]; then
 
   while [ $# -gt 0 ]; do
     case "$1" in
-      --user|-u|-user)
+      --user|-u|-user|--user-global|-user-global)
         mem_target="user"
         shift
         ;;
-      --project|-p|--per-project)
+      --project|-p|--per-project|-project|-per-project)
         mem_target="project"
         shift
         ;;
@@ -216,15 +217,18 @@ if [ "${1:-}" = "memory" ]; then
     esac
   done
 
-  mem_home="${HOME}"
+  mem_home="${HOME%/}"
   mem_base="${mem_local_path:-$(pwd)}"
+  mem_base="${mem_base%/}"
+  xdg_conf="${XDG_CONFIG_HOME:-$mem_home/.config}"
+  xdg_conf="${xdg_conf%/}"
 
   case "$subcmd" in
     path)
       if [ "$mem_target" = "project" ]; then
         echo "${mem_base}/.grill-plan-team/project-memory.md"
       else
-        echo "${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
+        echo "${xdg_conf}/grill-plan-team/user-memory.md"
       fi
       exit 0
       ;;
@@ -244,7 +248,7 @@ if [ "${1:-}" = "memory" ]; then
           echo "Initialized project memory: $target_file"
         fi
       else
-        target_file="${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
+        target_file="${xdg_conf}/grill-plan-team/user-memory.md"
         if [ -d "$target_file" ]; then
           echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
           exit 1
@@ -264,7 +268,7 @@ if [ "${1:-}" = "memory" ]; then
       if [ "$mem_target" = "project" ]; then
         target_file="${mem_base}/.grill-plan-team/project-memory.md"
       else
-        target_file="${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
+        target_file="${xdg_conf}/grill-plan-team/user-memory.md"
       fi
       if [ ! -f "$target_file" ]; then
         echo "Error: $([ "$mem_target" = "project" ] && echo "Project" || echo "User") memory file not found at $target_file." >&2
@@ -375,7 +379,7 @@ while [ $# -gt 0 ]; do
         fi
         IFS=',' read -ra ADDR <<< "$raw_val"
         for i in "${ADDR[@]}"; do
-          cleaned="$(echo "$i" | tr '[:upper:]' '[:lower:]' | xargs)"
+          cleaned="$(echo "$i" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
           if [ -n "$cleaned" ]; then
             REQUESTED_HARNESSES+=("$cleaned")
           fi
@@ -395,7 +399,7 @@ while [ $# -gt 0 ]; do
       fi
       IFS=',' read -ra ADDR <<< "$val"
       for i in "${ADDR[@]}"; do
-        cleaned="$(echo "$i" | tr '[:upper:]' '[:lower:]' | xargs)"
+        cleaned="$(echo "$i" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
         if [ -n "$cleaned" ]; then
           REQUESTED_HARNESSES+=("$cleaned")
         fi
@@ -419,7 +423,7 @@ fi
 VALID_REQUESTED_HARNESSES=()
 if [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
   for h in "${REQUESTED_HARNESSES[@]}"; do
-    cleaned_h="$(echo "$h" | tr '[:upper:]' '[:lower:]' | xargs)"
+    cleaned_h="$(echo "$h" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
     case "$cleaned_h" in
       antigravity|gemini|agy)
         if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " antigravity " ]]; then
@@ -811,12 +815,14 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
 
   if [ "$DO_PURGE" -eq 1 ] && [ "$DRY_RUN" -eq 1 ]; then
     if [ "$IS_GLOBAL" -eq 1 ]; then
-      PURGE_FILE="${XDG_CONFIG_HOME:-$TARGET_DIR/.config}/grill-plan-team/user-memory.md"
+      t_dir="${TARGET_DIR%/}"
+      xdg_conf="${XDG_CONFIG_HOME:-$t_dir/.config}"
+      PURGE_FILE="${xdg_conf%/}/grill-plan-team/user-memory.md"
       if [ -f "$PURGE_FILE" ]; then
         echo "[dry-run] Would purge: $PURGE_FILE"
       fi
     else
-      PURGE_FILE="${TARGET_DIR}/.grill-plan-team/project-memory.md"
+      PURGE_FILE="${TARGET_DIR%/}/.grill-plan-team/project-memory.md"
       if [ -f "$PURGE_FILE" ]; then
         echo "[dry-run] Would purge: $PURGE_FILE"
       fi
@@ -850,14 +856,16 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
 
     if [ "$DO_PURGE" -eq 1 ]; then
       if [ "$IS_GLOBAL" -eq 1 ]; then
-        PURGE_FILE="${XDG_CONFIG_HOME:-$TARGET_DIR/.config}/grill-plan-team/user-memory.md"
+        t_dir="${TARGET_DIR%/}"
+        xdg_conf="${XDG_CONFIG_HOME:-$t_dir/.config}"
+        PURGE_FILE="${xdg_conf%/}/grill-plan-team/user-memory.md"
         if [ -f "$PURGE_FILE" ]; then
           rm -f "$PURGE_FILE"
           echo "Purged: $PURGE_FILE"
           rmdir "$(dirname "$PURGE_FILE")" 2>/dev/null || true
         fi
       else
-        PURGE_FILE="${TARGET_DIR}/.grill-plan-team/project-memory.md"
+        PURGE_FILE="${TARGET_DIR%/}/.grill-plan-team/project-memory.md"
         if [ -f "$PURGE_FILE" ]; then
           rm -f "$PURGE_FILE"
           echo "Purged: $PURGE_FILE"
@@ -990,11 +998,12 @@ done
 save_installation_manifest "$MANIFEST_PATH"
 
 # Auto-initialize global user memory if it does not exist
-target_home="${TARGET_DIR}"
+target_home="${TARGET_DIR%/}"
 if [ "$IS_GLOBAL" -eq 0 ]; then
-  target_home="${HOME}"
+  target_home="${HOME%/}"
 fi
-user_mem_file="${XDG_CONFIG_HOME:-$target_home/.config}/grill-plan-team/user-memory.md"
+xdg_conf="${XDG_CONFIG_HOME:-$target_home/.config}"
+user_mem_file="${xdg_conf%/}/grill-plan-team/user-memory.md"
 if [ ! -f "$user_mem_file" ]; then
   if [ "$DRY_RUN" -eq 1 ]; then
     echo "[dry-run] Would initialize global user memory: $user_mem_file"
