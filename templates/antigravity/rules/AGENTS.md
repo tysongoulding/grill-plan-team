@@ -1,12 +1,12 @@
 # Agent Rules: Grill-Plan-Team Workflow
 
-This repository enforces the **Grill-Me $\to$ Plan $\to$ Teamwork-Preview $\to$ Distill** workflow backed by a two-tier recursive memory architecture. All agent operations must strictly adhere to these gated phases. **Do not skip or blend phases.**
+This repository enforces the **Grill-Me $\to$ Plan $\to$ Teamwork $\to$ Distill** workflow backed by a two-tier recursive memory architecture. All agent operations must strictly adhere to these gated phases. **Do not skip or blend phases.**
 
 ```mermaid
 flowchart LR
     M["Step 0: Memory Recall<br/>(Two-Tier Retrieval)"] --> A["Phase 1: Interactive Alignment<br/>(Grill-Me)"]
     A -->|"User Aligned"| B["Phase 2: Technical Design<br/>(Plan Blueprint)"]
-    B -->|"Plan Approved"| C["Phase 3: Multi-Agent Execution<br/>(Teamwork Preview)"]
+    B -->|"Plan Approved"| C["Phase 3: Teamwork<br/>(Execution & Verification)"]
     C -->|"Verification Passed"| D["Phase 4: Reflection & Distillation<br/>(Continuous Learning)"]
 ```
 
@@ -38,8 +38,8 @@ flowchart LR
   - **Verification Plan**: Objective, programmatic verification steps (exact test commands, type checking, build commands, E2E scripts).
 - **Phase Gate Approval**: Present the plan to the user. **DO NOT proceed to execution or Phase 3 until the user explicitly approves the plan.**
 
-### 3. Phase 3: Multi-Agent Swarm Handoff (Teamwork Preview)
-- **Goal**: Package the approved blueprint into a high-leverage specification and delegate execution to the autonomous `teamwork_preview` multi-agent swarm.
+### 3. Phase 3: Teamwork Execution & Verification
+- **Goal**: Package the approved blueprint into a high-leverage specification and execute autonomously with programmatic verification.
 - **Rule 1 — Maintain Prompt Draft Artifact**: Write `<Artifact Directory>/prompt_draft.md` with:
   - Status (`Ready for launch — awaiting user approval`)
   - Project description
@@ -47,7 +47,7 @@ flowchart LR
   - Behavioral Requirements (R1, R2, ...)
   - Objective, programmatic Acceptance Criteria with checkboxes
 - **Rule 2 — Teamwork Principles**: Specify *what*, not *how*. Provide programmatic verification commands. Avoid micromanaging implementation details.
-- **Rule 3 — Delegation Protocol**: Once the user confirms ("launch", "go", "approved"), update status to `Launched`, extract the prompt, and invoke the autonomous multi-agent swarm (`invoke_subagent` with `TypeName: teamwork_preview`). **Do NOT call `define_subagent`**; `teamwork_preview` is a pre-registered built-in subagent. On single-agent harnesses, execute the plan directly as the lead orchestrator.
+- **Rule 3 — Universal Execution Protocol**: Once the user confirms ("launch", "go", "approved"), update status to `Launched`, extract the prompt, and execute. In multi-agent harnesses supporting subagent tools (like `invoke_subagent`), delegate to an autonomous subagent (`TypeName: "self"`). On single-agent harnesses, execute the plan directly as the lead orchestrator.
 
 ### 4. Phase 4: Reflection & Distillation Loop
 - **Goal**: Persist learnings from interview choices, architectural outcomes, and test results back into memory.

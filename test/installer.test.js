@@ -43,7 +43,7 @@ describe('Repository Manifest & Schema Integrity', () => {
     const skillContent = fs.readFileSync(skillPath, 'utf8');
     assert.ok(skillContent.includes('Phase 1: Interactive Alignment (Grill-Me)'));
     assert.ok(skillContent.includes('Phase 2: Technical Design & Verification (Plan)'));
-    assert.ok(skillContent.includes('Phase 3: Multi-Agent Swarm Handoff (Teamwork Preview)'));
+    assert.ok(skillContent.includes('Phase 3: Teamwork Execution & Verification'));
   });
 
   test('Antigravity rules/AGENTS.md exists and contains phase governance', () => {
@@ -52,7 +52,7 @@ describe('Repository Manifest & Schema Integrity', () => {
     const rulesContent = fs.readFileSync(rulesPath, 'utf8');
     assert.ok(rulesContent.includes('Phase 1: Interactive Alignment (Grill-Me)'));
     assert.ok(rulesContent.includes('Phase 2: Technical Design & Verification (Plan)'));
-    assert.ok(rulesContent.includes('Phase 3: Multi-Agent Swarm Handoff (Teamwork Preview)'));
+    assert.ok(rulesContent.includes('Phase 3: Teamwork Execution & Verification'));
   });
 
   test('Claude Code adapter files exist and are valid', () => {

@@ -17,7 +17,7 @@ Execute project development across four strictly gated, sequential phases backed
 flowchart LR
     M["Step 0: Memory Recall<br/>(User & Project Context)"] --> A["Phase 1: Interactive Alignment<br/>(Grill-Me)"]
     A -->|"User Aligned"| B["Phase 2: Technical Design<br/>(Plan Blueprint)"]
-    B -->|"Plan Approved"| C["Phase 3: Multi-Agent Execution<br/>(Teamwork Preview)"]
+    B -->|"Plan Approved"| C["Phase 3: Teamwork<br/>(Execution & Verification)"]
     C -->|"Verification Passed"| D["Phase 4: Reflection & Distillation<br/>(Continuous Learning)"]
 ```
 
@@ -89,9 +89,9 @@ Translate the agreed design into a rigorous, actionable engineering blueprint gr
 
 ---
 
-## Phase 3: Multi-Agent Swarm Handoff (Teamwork Preview)
+## Phase 3: Teamwork Execution & Verification
 
-Package the approved blueprint into a high-leverage specification and delegate execution to the autonomous `teamwork_preview` multi-agent swarm.
+Package the approved blueprint into a high-leverage specification and execute autonomously with rigorous programmatic verification.
 
 ### Execution Rules:
 
@@ -99,11 +99,11 @@ Package the approved blueprint into a high-leverage specification and delegate e
 Create and update `prompt_draft.md` in the artifact directory (`<Artifact Directory>/prompt_draft.md`) using this structure:
 
 ```markdown
-# Teamwork Project Prompt — Draft
+# Execution Prompt — Draft
 
 > Status: Ready for launch — awaiting user approval
-> Goal: Craft prompt → get user approval → delegate to teamwork_preview
-> Requested team: [none — teamwork routes from the description]
+> Goal: Craft prompt → get user approval → execute with verification
+> Execution mode: Autonomous execution with programmatic verification
 
 [Project description — 1-2 sentences]
 
@@ -127,35 +127,34 @@ Integrity mode: development
 - [ ] [Git governance: e.g. work committed only to local branch, zero pushes/deploys]
 
 ---
-*Next: when approved → delegate via invoke_subagent*
+*Next: when approved → proceed to execution*
 ```
 
 #### 2. Adhere to Teamwork Principles
 - **Specify What, Not How**: Define clear interfaces, behaviors, and acceptance criteria. Avoid over-constraining the agent team with rigid implementation micro-steps unless the user specifically requested them.
-- **Objective Verification**: Provide programmatic verification commands that prevent the team from prematurely self-certifying work.
-- **Minimal Requirements**: Only specify constraints the user genuinely cares about, leaving room for the agents' independent problem-solving.
+- **Objective Verification**: Provide programmatic verification commands that prevent premature self-certification of work.
+- **Minimal Requirements**: Only specify constraints the user genuinely cares about, leaving room for independent problem-solving.
 
 #### 3. Universal Execution Protocol
 Once the user approves ("launch", "go", "proceed", or auto-approved):
 1. Update `prompt_draft.md` status to `> Status: Launched & Executing`.
 2. **For Multi-Agent Platforms (e.g. Antigravity)**:
-   - If the `invoke_subagent` tool is available, delegate execution to an autonomous subagent or swarm.
-   - **IMPORTANT**: In Antigravity, `teamwork_preview` is a pre-defined built-in subagent (hidden from the static subagents list). **DO NOT call `define_subagent`**. Call `invoke_subagent` directly:
+   - If the harness provides a subagent delegation tool (such as `invoke_subagent`), delegate execution to an autonomous subagent:
      ```json
      {
        "Subagents": [
          {
-           "TypeName": "teamwork_preview",
-           "Role": "Teamwork Orchestrator",
+           "TypeName": "self",
+           "Role": "Execution Orchestrator",
            "Prompt": "<Full prompt text extracted from prompt_draft.md>",
            "Model": "inherit"
          }
        ]
      }
      ```
-   - If `teamwork_preview` is not available or rejected, fall back to `TypeName: "self"` with the same prompt.
+   - In environments where a specialized swarm orchestrator is pre-configured, that type may also be used.
 3. **For Single-Agent Harnesses (Claude Code, Cursor, Windsurf, Roo Code)**:
-   - Execute the approved plan directly as an autonomous orchestrator:
+   - Execute the approved plan directly as the lead orchestrator:
      - Decompose the requirements into discrete steps.
      - Implement code changes and immediately run objective verification commands (`npm test`, `tsc`, linters).
      - Never bypass, weaken, or mock tests to achieve a passing state.
