@@ -119,20 +119,21 @@ describe('Repository Manifest & Schema Integrity', () => {
     assert.strictEqual(grillMode.name, 'Grill-Plan-Team');
   });
 
-  test('templates directory contains all required harness templates', () => {
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'antigravity', 'plugin.json')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'claude', 'commands', 'grill-plan-team.md')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'cursor', '.cursorrules')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'windsurf', '.windsurfrules')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'roo', '.roomodes')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'kimi', 'skills', 'grill-plan-team', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'hermes', 'skills', 'grill-plan-team', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'pi', 'skills', 'grill-plan-team', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'omp', 'skills', 'grill-plan-team', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'codex', 'skills', 'grill-plan-team', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'templates', 'grok', 'skills', 'grill-plan-team', 'SKILL.md')));
+  test('canonical sources and memory directory contain all required files', () => {
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'plugin.json')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'rules', 'AGENTS.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, '.claude', 'commands', 'grill-plan-team.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, '.cursorrules')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, '.cursor', 'rules', 'grill-plan-team.mdc')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, '.windsurfrules')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, '.roomodes')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, '.clinerules')));
     assert.ok(fs.existsSync(path.join(REPO_ROOT, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'memory', 'ASSESSMENT.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'memory', 'REQUIREMENTS.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'memory', 'user-memory.md')));
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'memory', 'project-memory.md')));
 
     const { HARNESSES, HARNESS_DISPLAY_NAMES } = require('../bin/install.js');
     assert.strictEqual(HARNESSES.length, 12, 'HARNESSES array contains 12 entries');
@@ -193,10 +194,6 @@ describe('Shell Installer (install.sh)', () => {
     assert.ok(fs.existsSync(path.join(tmpDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')), 'OpenCode skill installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md')), 'Codex skill installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md')), 'Grok skill installed');
-    assert.ok(fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest created');
-
-    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
-    assert.strictEqual(manifest.harnesses.length, 12, 'Manifest records all 12 harnesses');
   });
 
   test('install.sh --local installs only selected harness', () => {
@@ -286,30 +283,31 @@ describe('Shell Installer (install.sh)', () => {
     }, /No valid harnesses specified/);
   });
 
-  test('install.sh incremental install merges manifest files and harnesses', () => {
+  test('install.sh incremental install installs multiple harnesses correctly', () => {
     execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
     execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'claude'], { encoding: 'utf8' });
 
-    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
-    assert.ok(manifest.harnesses.includes('cursor'), 'Manifest contains cursor');
-    assert.ok(manifest.harnesses.includes('claude'), 'Manifest contains claude');
-    assert.strictEqual(manifest.harnesses.length, 2);
-    assert.strictEqual(manifest.installedFiles.length, 4);
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor rules installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursor', 'rules', 'grill-plan-team.mdc')), 'Cursor MDC installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.claude', 'skills', 'grill-plan-team', 'SKILL.md')), 'Claude skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.claude', 'commands', 'grill-plan-team.md')), 'Claude command installed');
   });
 
-  test('install.sh selective uninstall updates manifest and removes manifest when last harness is uninstalled', () => {
+  test('install.sh selective uninstall and legacy manifest removal', () => {
+    const legacyManifest = path.join(tmpDir, '.grill-plan-team-manifest.json');
+    fs.writeFileSync(legacyManifest, JSON.stringify({ installedFiles: [], harnesses: ['cursor', 'claude'] }));
+
     execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
     execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'claude'], { encoding: 'utf8' });
 
     // Remove claude
     execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'claude', '--uninstall'], { encoding: 'utf8' });
-    let manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
-    assert.deepStrictEqual(manifest.harnesses, ['cursor']);
-    assert.strictEqual(manifest.installedFiles.length, 2);
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.claude')), 'Claude directory removed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor preserved');
 
-    // Remove cursor
+    // Remove cursor (last harness)
     execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'cursor', '--uninstall'], { encoding: 'utf8' });
-    assert.ok(!fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest removed');
+    assert.ok(!fs.existsSync(legacyManifest), 'Legacy manifest cleanly removed');
     assert.strictEqual(fs.readdirSync(tmpDir).length, 0, 'Target directory clean after complete selective uninstall');
   });
 
@@ -395,9 +393,6 @@ describe('Node Installer CLI (bin/install.js)', () => {
     assert.ok(fs.existsSync(path.join(tmpDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')), 'OpenCode skill installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md')), 'Codex skill installed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md')), 'Grok skill installed');
-
-    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
-    assert.strictEqual(manifest.harnesses.length, 12, 'Manifest records all 12 harnesses');
   });
 
   test('bin/install.js --uninstall cleanly removes installed files and preserves others', () => {
@@ -434,10 +429,10 @@ describe('Node Installer CLI (bin/install.js)', () => {
   test('bin/install.js --local runs with auto-detection without hanging', () => {
     // Should complete cleanly and not hang waiting on interactive stdin
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir], { encoding: 'utf8' });
-    assert.ok(fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')));
+    assert.ok(fs.existsSync(path.join(tmpDir, 'skills', 'grill-plan-team', 'SKILL.md')) || fs.existsSync(path.join(tmpDir, 'plugin.json')));
   });
 
-  test('bin/install.js supports selective uninstallation of single harness and updates manifest', () => {
+  test('bin/install.js supports selective uninstallation of single harness', () => {
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--all'], { encoding: 'utf8' });
     assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')));
     assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')));
@@ -448,11 +443,6 @@ describe('Node Installer CLI (bin/install.js)', () => {
     assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor rules removed');
     assert.ok(!fs.existsSync(path.join(tmpDir, '.cursor', 'rules', 'grill-plan-team.mdc')), 'Cursor MDC removed');
     assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')), 'Roo modes preserved');
-
-    // Manifest should still exist and not have cursor
-    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
-    assert.ok(!manifest.harnesses.includes('cursor'), 'Manifest removed cursor');
-    assert.ok(manifest.harnesses.includes('roo'), 'Manifest preserved roo');
   });
 
   test('bin/install.js cleans empty directories on complete uninstall', () => {
@@ -527,22 +517,24 @@ describe('Node Installer CLI (bin/install.js)', () => {
     }, /No valid harnesses specified/);
   });
 
-  test('bin/install.js incremental install merges manifest files and harnesses', () => {
+  test('bin/install.js incremental install installs multiple harnesses correctly', () => {
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'claude'], { encoding: 'utf8' });
 
-    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
-    assert.ok(manifest.harnesses.includes('cursor'), 'Manifest contains cursor');
-    assert.ok(manifest.harnesses.includes('claude'), 'Manifest contains claude');
-    assert.strictEqual(manifest.harnesses.length, 2);
-    assert.strictEqual(manifest.installedFiles.length, 4);
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor rules installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursor', 'rules', 'grill-plan-team.mdc')), 'Cursor MDC installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.claude', 'skills', 'grill-plan-team', 'SKILL.md')), 'Claude skill installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.claude', 'commands', 'grill-plan-team.md')), 'Claude command installed');
   });
 
-  test('bin/install.js selective uninstall removes manifest when last harness is uninstalled', () => {
+  test('bin/install.js selective uninstall and legacy manifest removal', () => {
+    const legacyManifest = path.join(tmpDir, '.grill-plan-team-manifest.json');
+    fs.writeFileSync(legacyManifest, JSON.stringify({ installedFiles: [], harnesses: ['cursor'] }));
+
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
     execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'cursor', '--uninstall'], { encoding: 'utf8' });
 
-    assert.ok(!fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest removed');
+    assert.ok(!fs.existsSync(legacyManifest), 'Legacy manifest removed');
     assert.strictEqual(fs.readdirSync(tmpDir).length, 0, 'Target directory clean after complete selective uninstall');
   });
 
@@ -628,18 +620,12 @@ describe('Cross-Harness Parity & Byte Integrity', () => {
     }
   });
 
-  test('install.sh and bin/install.js produce matching manifest structures', () => {
+  test('install.sh and bin/install.js produce matching installed file sets', () => {
     execFileSync('bash', [INSTALL_SH, '--local', shDir, '--all'], { encoding: 'utf8' });
     execFileSync('node', [BIN_INSTALL_JS, '--local', nodeDir, '--all'], { encoding: 'utf8' });
 
-    const shManifest = JSON.parse(fs.readFileSync(path.join(shDir, '.grill-plan-team-manifest.json'), 'utf8'));
-    const nodeManifest = JSON.parse(fs.readFileSync(path.join(nodeDir, '.grill-plan-team-manifest.json'), 'utf8'));
-
-    assert.strictEqual(shManifest.version, nodeManifest.version);
-    assert.deepStrictEqual(shManifest.harnesses.sort(), nodeManifest.harnesses.sort());
-    assert.strictEqual(shManifest.harnesses.length, 12, '12 harnesses in manifest');
-    assert.strictEqual(shManifest.installedFiles.length, nodeManifest.installedFiles.length);
-    assert.strictEqual(shManifest.installedFiles.length, 18, '18 installed files in manifest');
+    assert.ok(!fs.existsSync(path.join(shDir, '.grill-plan-team-manifest.json')), 'No stateful manifest in shDir');
+    assert.ok(!fs.existsSync(path.join(nodeDir, '.grill-plan-team-manifest.json')), 'No stateful manifest in nodeDir');
   });
 });
 
@@ -667,10 +653,10 @@ describe('Two-Tier Recursive Memory Engine', () => {
   });
 
   test('Memory template files exist and contain required schema sections', () => {
-    const assessMemPath = path.join(REPO_ROOT, 'templates', 'memory', 'ASSESSMENT.md');
-    const reqMemPath = path.join(REPO_ROOT, 'templates', 'memory', 'REQUIREMENTS.md');
-    const userMemPath = path.join(REPO_ROOT, 'templates', 'memory', 'user-memory.md');
-    const projMemPath = path.join(REPO_ROOT, 'templates', 'memory', 'project-memory.md');
+    const assessMemPath = path.join(REPO_ROOT, 'memory', 'ASSESSMENT.md');
+    const reqMemPath = path.join(REPO_ROOT, 'memory', 'REQUIREMENTS.md');
+    const userMemPath = path.join(REPO_ROOT, 'memory', 'user-memory.md');
+    const projMemPath = path.join(REPO_ROOT, 'memory', 'project-memory.md');
 
     assert.ok(fs.existsSync(assessMemPath), 'ASSESSMENT.md template exists');
     assert.ok(fs.existsSync(reqMemPath), 'REQUIREMENTS.md template exists');
@@ -703,7 +689,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(projContent.includes('## Established Repository Conventions'));
   });
 
-  test('SKILL.md and all harness templates include Step 0 Memory Recall and Phase 4 Reflection & Distillation', () => {
+  test('SKILL.md and all adapter files include Step 0 Memory Recall and Phase 4 Reflection & Distillation', () => {
     const files = [
       path.join(REPO_ROOT, 'skills', 'grill-plan-team', 'SKILL.md'),
       path.join(REPO_ROOT, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
@@ -714,23 +700,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
       path.join(REPO_ROOT, '.cursor', 'rules', 'grill-plan-team.mdc'),
       path.join(REPO_ROOT, '.windsurfrules'),
       path.join(REPO_ROOT, '.roomodes'),
-      path.join(REPO_ROOT, '.clinerules'),
-      path.join(REPO_ROOT, 'templates', 'antigravity', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'antigravity', 'rules', 'AGENTS.md'),
-      path.join(REPO_ROOT, 'templates', 'claude', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'claude', 'commands', 'grill-plan-team.md'),
-      path.join(REPO_ROOT, 'templates', 'cursor', '.cursorrules'),
-      path.join(REPO_ROOT, 'templates', 'cursor', '.cursor', 'rules', 'grill-plan-team.mdc'),
-      path.join(REPO_ROOT, 'templates', 'windsurf', '.windsurfrules'),
-      path.join(REPO_ROOT, 'templates', 'roo', '.roomodes'),
-      path.join(REPO_ROOT, 'templates', 'roo', '.clinerules'),
-      path.join(REPO_ROOT, 'templates', 'kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'pi', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'omp', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'codex', 'skills', 'grill-plan-team', 'SKILL.md'),
-      path.join(REPO_ROOT, 'templates', 'grok', 'skills', 'grill-plan-team', 'SKILL.md')
+      path.join(REPO_ROOT, '.clinerules')
     ];
 
     for (const file of files) {
@@ -1452,8 +1422,6 @@ describe('7 Additional Coding Agent Harnesses Integration (12 Total)', () => {
       const testDirNode = path.join(tmpDir, `node-${item.canonical}`);
       fs.mkdirSync(testDirNode, { recursive: true });
       execFileSync('node', [BIN_INSTALL_JS, '--local', testDirNode, '--harness', item.alias]);
-      const nodeManifest = JSON.parse(fs.readFileSync(path.join(testDirNode, '.grill-plan-team-manifest.json'), 'utf8'));
-      assert.ok(nodeManifest.harnesses.includes(item.canonical), `Node manifest contains canonical ${item.canonical}`);
       assert.ok(fs.existsSync(path.join(testDirNode, `.${item.canonical}`, 'skills', 'grill-plan-team', 'SKILL.md')));
       assert.ok(fs.existsSync(path.join(testDirNode, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
 
@@ -1461,8 +1429,6 @@ describe('7 Additional Coding Agent Harnesses Integration (12 Total)', () => {
       const testDirBash = path.join(tmpDir, `bash-${item.canonical}`);
       fs.mkdirSync(testDirBash, { recursive: true });
       execFileSync('bash', [INSTALL_SH, '--local', testDirBash, '--harness', item.alias]);
-      const bashManifest = JSON.parse(fs.readFileSync(path.join(testDirBash, '.grill-plan-team-manifest.json'), 'utf8'));
-      assert.ok(bashManifest.harnesses.includes(item.canonical), `Bash manifest contains canonical ${item.canonical}`);
       assert.ok(fs.existsSync(path.join(testDirBash, `.${item.canonical}`, 'skills', 'grill-plan-team', 'SKILL.md')));
       assert.ok(fs.existsSync(path.join(testDirBash, '.agents', 'skills', 'grill-plan-team', 'SKILL.md')));
     }
@@ -1484,10 +1450,11 @@ describe('7 Additional Coding Agent Harnesses Integration (12 Total)', () => {
         `.agents standard path exists for ${harness}`
       );
 
-      const manifest = JSON.parse(fs.readFileSync(path.join(subDir, '.grill-plan-team-manifest.json'), 'utf8'));
-      assert.strictEqual(manifest.harnesses.length, 1);
-      assert.strictEqual(manifest.harnesses[0], harness);
-      assert.strictEqual(manifest.installedFiles.length, 2);
+      // Verify clean uninstallation
+      execFileSync('node', [BIN_INSTALL_JS, '--local', subDir, '--harness', harness, '--uninstall']);
+      assert.ok(!fs.existsSync(path.join(subDir, `.${harness}`)), `.${harness} removed`);
+      assert.ok(!fs.existsSync(path.join(subDir, '.agents')), '.agents removed');
+      assert.strictEqual(fs.readdirSync(subDir).length, 0, `Clean directory for ${harness}`);
     }
   });
 

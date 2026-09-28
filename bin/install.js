@@ -2,7 +2,9 @@
 
 /**
  * Universal installer and CLI for grill-plan-team.
- * Cross-harness plugin installer for Antigravity, Claude Code, Cursor, Windsurf, and Roo Code / Cline.
+ * Cross-harness plugin installer for 12 AI coding agents:
+ * Antigravity, Claude Code, Cursor, Windsurf, Roo Code,
+ * Kimi Code, Hermes Agent, Pi Agent, Oh My Pi, OpenCode, Codex, and Grok Build.
  * Zero external dependencies.
  */
 
@@ -13,7 +15,7 @@ const readline = require('readline');
 const { execSync } = require('child_process');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
-const TEMPLATES_DIR = path.join(PKG_ROOT, 'templates');
+const MEMORY_DIR = path.join(PKG_ROOT, 'memory');
 const MANIFEST_FILENAME = '.grill-plan-team-manifest.json';
 
 const HARNESSES = [
@@ -155,6 +157,179 @@ Technical guardrails, VCS workflows, language and library preferences, architect
 - Cross-harness compatibility: Do not bind phase execution to proprietary subagent names.
 `;
 
+/**
+ * Declarative Static Registry for all 12 harnesses.
+ * Maps harness to canonical source files and their target paths (global & local).
+ */
+const REGISTRY = {
+  antigravity: {
+    files: [
+      {
+        src: 'plugin.json',
+        global: (baseDir) => path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'plugin.json'),
+        local: (baseDir) => path.join(baseDir, 'plugin.json')
+      },
+      {
+        src: 'rules/AGENTS.md',
+        global: (baseDir) => path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'rules', 'AGENTS.md'),
+        local: (baseDir) => path.join(baseDir, 'rules', 'AGENTS.md')
+      },
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => path.join(baseDir, 'skills', 'grill-plan-team', 'SKILL.md')
+      }
+    ],
+    cleanExtra: (baseDir, isGlobal) => isGlobal ? [path.join(baseDir, '.gemini', 'config', 'skills', 'grill-plan-team', 'SKILL.md')] : []
+  },
+  claude: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.claude', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => path.join(baseDir, '.claude', 'skills', 'grill-plan-team', 'SKILL.md')
+      },
+      {
+        src: '.claude/commands/grill-plan-team.md',
+        global: (baseDir) => path.join(baseDir, '.claude', 'commands', 'grill-plan-team.md'),
+        local: (baseDir) => path.join(baseDir, '.claude', 'commands', 'grill-plan-team.md')
+      }
+    ]
+  },
+  cursor: {
+    files: [
+      {
+        src: '.cursor/rules/grill-plan-team.mdc',
+        global: (baseDir) => path.join(baseDir, '.cursor', 'rules', 'grill-plan-team.mdc'),
+        local: (baseDir) => path.join(baseDir, '.cursor', 'rules', 'grill-plan-team.mdc')
+      },
+      {
+        src: '.cursorrules',
+        global: (baseDir) => path.join(baseDir, '.cursorrules'),
+        local: (baseDir) => path.join(baseDir, '.cursorrules')
+      }
+    ],
+    cleanExtra: (baseDir) => [path.join(baseDir, '.cursor', 'skills', 'grill-plan-team', 'SKILL.md')]
+  },
+  windsurf: {
+    files: [
+      {
+        src: '.windsurfrules',
+        global: (baseDir) => path.join(baseDir, '.windsurfrules'),
+        local: (baseDir) => path.join(baseDir, '.windsurfrules')
+      }
+    ]
+  },
+  roo: {
+    files: [
+      {
+        src: '.roomodes',
+        global: (baseDir) => path.join(baseDir, '.roomodes'),
+        local: (baseDir) => path.join(baseDir, '.roomodes')
+      },
+      {
+        src: '.clinerules',
+        global: (baseDir) => path.join(baseDir, '.clinerules'),
+        local: (baseDir) => path.join(baseDir, '.clinerules')
+      }
+    ]
+  },
+  kimi: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => [
+          path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          path.join(baseDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md')
+        ]
+      }
+    ]
+  },
+  hermes: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => [
+          path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          path.join(baseDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md')
+        ]
+      }
+    ]
+  },
+  pi: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.pi', 'agent', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => [
+          path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          path.join(baseDir, '.pi', 'skills', 'grill-plan-team', 'SKILL.md')
+        ]
+      }
+    ]
+  },
+  omp: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => [
+          path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          path.join(baseDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md')
+        ]
+      }
+    ]
+  },
+  opencode: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.config', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => [
+          path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          path.join(baseDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md')
+        ]
+      }
+    ]
+  },
+  codex: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => [
+          path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          path.join(baseDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md')
+        ]
+      }
+    ]
+  },
+  grok: {
+    files: [
+      {
+        src: 'skills/grill-plan-team/SKILL.md',
+        global: (baseDir) => path.join(baseDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md'),
+        local: (baseDir) => [
+          path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
+          path.join(baseDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md')
+        ]
+      }
+    ]
+  }
+};
+
+const AGENT_HARNESS_DEDICATED_FILES = {
+  kimi: (baseDir) => path.join(baseDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
+  hermes: (baseDir) => path.join(baseDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
+  pi: (baseDir) => path.join(baseDir, '.pi', 'skills', 'grill-plan-team', 'SKILL.md'),
+  omp: (baseDir) => path.join(baseDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md'),
+  opencode: (baseDir) => path.join(baseDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
+  codex: (baseDir) => path.join(baseDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md'),
+  grok: (baseDir) => path.join(baseDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md')
+};
+
 function getHomeDir() {
   return process.env.HOME || process.env.USERPROFILE || os.homedir();
 }
@@ -202,7 +377,7 @@ function getProjectMemoryPath(baseDir = process.cwd()) {
 
 function getAssessmentTemplate() {
   try {
-    return getTemplateContent('memory/ASSESSMENT.md');
+    return fs.readFileSync(path.join(MEMORY_DIR, 'ASSESSMENT.md'), 'utf8');
   } catch {
     return DEFAULT_ASSESSMENT_TEMPLATE;
   }
@@ -210,7 +385,7 @@ function getAssessmentTemplate() {
 
 function getRequirementsTemplate() {
   try {
-    return getTemplateContent('memory/REQUIREMENTS.md');
+    return fs.readFileSync(path.join(MEMORY_DIR, 'REQUIREMENTS.md'), 'utf8');
   } catch {
     return DEFAULT_REQUIREMENTS_TEMPLATE;
   }
@@ -218,7 +393,7 @@ function getRequirementsTemplate() {
 
 function getUserMemoryTemplate() {
   try {
-    return getTemplateContent('memory/user-memory.md');
+    return fs.readFileSync(path.join(MEMORY_DIR, 'user-memory.md'), 'utf8');
   } catch {
     return DEFAULT_USER_MEMORY;
   }
@@ -226,9 +401,27 @@ function getUserMemoryTemplate() {
 
 function getProjectMemoryTemplate() {
   try {
-    return getTemplateContent('memory/project-memory.md');
+    return fs.readFileSync(path.join(MEMORY_DIR, 'project-memory.md'), 'utf8');
   } catch {
     return DEFAULT_PROJECT_MEMORY;
+  }
+}
+
+function ensureDirSync(dirPath, dryRun) {
+  if (!fs.existsSync(dirPath)) {
+    if (!dryRun) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    return true;
+  }
+  return false;
+}
+
+function writeFileSyncSafe(filePath, content, dryRun) {
+  const dir = path.dirname(filePath);
+  ensureDirSync(dir, dryRun);
+  if (!dryRun) {
+    fs.writeFileSync(filePath, content, 'utf8');
   }
 }
 
@@ -299,7 +492,6 @@ function ensureUserMemory(homeDir, dryRun) {
     created = true;
   }
 
-  // Also maintain user-memory.md for legacy tools
   if (!fs.existsSync(legacyMem)) {
     if (!dryRun) {
       writeFileSyncSafe(legacyMem, getUserMemoryTemplate(), false);
@@ -512,7 +704,6 @@ function handleMemoryCommand(args) {
       } else if (docType === 'legacy') {
         console.log(target === 'project' ? getProjectMemoryPath(projDir) : getUserMemoryPath(homeDir));
       } else {
-        // When docType omitted: return assessment for user, requirements for project
         console.log(target === 'project' ? getProjectRequirementsPath(projDir) : getUserAssessmentPath(homeDir));
       }
       break;
@@ -690,8 +881,9 @@ function parseArgs(args) {
 }
 
 function printHelp() {
+  const isShell = process.env.GRILL_CALLER === 'shell';
   console.log(`
-Grill-Plan-Team Universal Installer & Adapter Manager
+${isShell ? 'Grill-Plan-Team Universal Shell Installer' : 'Grill-Plan-Team Universal Installer & Adapter Manager'}
 
 Usage:
   npx grill-plan-team [options]
@@ -851,238 +1043,23 @@ function detectInstalledHarnesses(homeDir) {
   return detected;
 }
 
-function getTemplateContent(subpath) {
-  const templatePath = path.join(TEMPLATES_DIR, subpath);
-  if (fs.existsSync(templatePath)) {
-    return fs.readFileSync(templatePath, 'utf8');
-  }
-  const rootPath = path.join(PKG_ROOT, subpath);
-  if (fs.existsSync(rootPath)) {
-    return fs.readFileSync(rootPath, 'utf8');
-  }
-  throw new Error(`Template not found: ${subpath}`);
-}
-
-function ensureDirSync(dirPath, dryRun) {
-  if (!fs.existsSync(dirPath)) {
-    if (!dryRun) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-    return true;
-  }
-  return false;
-}
-
-function writeFileSyncSafe(filePath, content, dryRun) {
-  const dir = path.dirname(filePath);
-  ensureDirSync(dir, dryRun);
-  if (!dryRun) {
-    fs.writeFileSync(filePath, content, 'utf8');
-  }
-}
-
 function getHarnessFileMappings(harness, baseDir, isGlobal) {
+  const entry = REGISTRY[harness];
+  if (!entry) return [];
   const mappings = [];
-
-  switch (harness) {
-    case 'antigravity':
-      if (isGlobal) {
-        const pluginDir = path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team');
-        mappings.push({
-          target: path.join(pluginDir, 'plugin.json'),
-          content: getTemplateContent('antigravity/plugin.json')
-        });
-        mappings.push({
-          target: path.join(pluginDir, 'rules', 'AGENTS.md'),
-          content: getTemplateContent('antigravity/rules/AGENTS.md')
-        });
-        mappings.push({
-          target: path.join(pluginDir, 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('antigravity/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, 'plugin.json'),
-          content: getTemplateContent('antigravity/plugin.json')
-        });
-        mappings.push({
-          target: path.join(baseDir, 'rules', 'AGENTS.md'),
-          content: getTemplateContent('antigravity/rules/AGENTS.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('antigravity/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
-
-    case 'claude':
+  for (const item of entry.files) {
+    const srcPath = path.join(PKG_ROOT, item.src);
+    const content = fs.existsSync(srcPath) ? fs.readFileSync(srcPath, 'utf8') : '';
+    const targets = isGlobal ? item.global(baseDir) : item.local(baseDir);
+    const targetArr = Array.isArray(targets) ? targets : [targets];
+    for (const t of targetArr) {
       mappings.push({
-        target: path.join(baseDir, isGlobal ? '.claude' : '.claude', 'skills', 'grill-plan-team', 'SKILL.md'),
-        content: getTemplateContent('claude/skills/grill-plan-team/SKILL.md')
+        src: srcPath,
+        target: t,
+        content
       });
-      mappings.push({
-        target: path.join(baseDir, isGlobal ? '.claude' : '.claude', 'commands', 'grill-plan-team.md'),
-        content: getTemplateContent('claude/commands/grill-plan-team.md')
-      });
-      break;
-
-    case 'cursor':
-      mappings.push({
-        target: path.join(baseDir, isGlobal ? '.cursor' : '.cursor', 'rules', 'grill-plan-team.mdc'),
-        content: getTemplateContent('cursor/.cursor/rules/grill-plan-team.mdc')
-      });
-      mappings.push({
-        target: path.join(baseDir, '.cursorrules'),
-        content: getTemplateContent('cursor/.cursorrules')
-      });
-      break;
-
-    case 'windsurf':
-      mappings.push({
-        target: path.join(baseDir, '.windsurfrules'),
-        content: getTemplateContent('windsurf/.windsurfrules')
-      });
-      break;
-
-    case 'roo':
-      mappings.push({
-        target: path.join(baseDir, '.roomodes'),
-        content: getTemplateContent('roo/.roomodes')
-      });
-      mappings.push({
-        target: path.join(baseDir, '.clinerules'),
-        content: getTemplateContent('roo/.clinerules')
-      });
-      break;
-
-    case 'kimi':
-      if (isGlobal) {
-        mappings.push({
-          target: path.join(baseDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('kimi/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('kimi/skills/grill-plan-team/SKILL.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, '.kimi', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('kimi/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
-
-    case 'hermes':
-      if (isGlobal) {
-        mappings.push({
-          target: path.join(baseDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('hermes/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('hermes/skills/grill-plan-team/SKILL.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, '.hermes', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('hermes/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
-
-    case 'pi':
-      if (isGlobal) {
-        mappings.push({
-          target: path.join(baseDir, '.pi', 'agent', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('pi/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('pi/skills/grill-plan-team/SKILL.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, '.pi', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('pi/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
-
-    case 'omp':
-      if (isGlobal) {
-        mappings.push({
-          target: path.join(baseDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('omp/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('omp/skills/grill-plan-team/SKILL.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, '.omp', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('omp/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
-
-    case 'opencode':
-      if (isGlobal) {
-        mappings.push({
-          target: path.join(baseDir, '.config', 'opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('opencode/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('opencode/skills/grill-plan-team/SKILL.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, '.opencode', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('opencode/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
-
-    case 'codex':
-      if (isGlobal) {
-        mappings.push({
-          target: path.join(baseDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('codex/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('codex/skills/grill-plan-team/SKILL.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, '.codex', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('codex/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
-
-    case 'grok':
-      if (isGlobal) {
-        mappings.push({
-          target: path.join(baseDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('grok/skills/grill-plan-team/SKILL.md')
-        });
-      } else {
-        mappings.push({
-          target: path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('grok/skills/grill-plan-team/SKILL.md')
-        });
-        mappings.push({
-          target: path.join(baseDir, '.grok', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('grok/skills/grill-plan-team/SKILL.md')
-        });
-      }
-      break;
+    }
   }
-
   return mappings;
 }
 
@@ -1133,23 +1110,6 @@ function updateGeminiPluginsJson(homeDir, dryRun, remove = false) {
   }
 }
 
-function loadManifest(manifestPath) {
-  if (fs.existsSync(manifestPath)) {
-    try {
-      return JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    } catch {
-      return { installedFiles: [], harnesses: [] };
-    }
-  }
-  return { installedFiles: [], harnesses: [] };
-}
-
-function saveManifest(manifestPath, manifest, dryRun) {
-  if (!dryRun) {
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-  }
-}
-
 async function promptHarnesses(detected) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -1191,6 +1151,55 @@ async function promptHarnesses(detected) {
   });
 }
 
+const DIRS_TO_CLEAN = (baseDir) => [
+  path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'skills'),
+  path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'rules'),
+  path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team'),
+  path.join(baseDir, '.gemini', 'config', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.claude', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.claude', 'skills'),
+  path.join(baseDir, '.claude', 'commands'),
+  path.join(baseDir, '.claude'),
+  path.join(baseDir, '.cursor', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.cursor', 'skills'),
+  path.join(baseDir, '.cursor', 'rules'),
+  path.join(baseDir, '.cursor'),
+  path.join(baseDir, 'skills', 'grill-plan-team'),
+  path.join(baseDir, 'skills'),
+  path.join(baseDir, 'rules'),
+  path.join(baseDir, '.agents', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.agents', 'skills'),
+  path.join(baseDir, '.agents'),
+  path.join(baseDir, '.kimi', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.kimi', 'skills'),
+  path.join(baseDir, '.kimi'),
+  path.join(baseDir, '.hermes', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.hermes', 'skills'),
+  path.join(baseDir, '.hermes'),
+  path.join(baseDir, '.pi', 'agent', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.pi', 'agent', 'skills'),
+  path.join(baseDir, '.pi', 'agent'),
+  path.join(baseDir, '.pi', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.pi', 'skills'),
+  path.join(baseDir, '.pi'),
+  path.join(baseDir, '.omp', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.omp', 'skills'),
+  path.join(baseDir, '.omp'),
+  path.join(baseDir, '.config', 'opencode', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.config', 'opencode', 'skills'),
+  path.join(baseDir, '.config', 'opencode'),
+  path.join(baseDir, '.opencode', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.opencode', 'skills'),
+  path.join(baseDir, '.opencode'),
+  path.join(baseDir, '.codex', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.codex', 'skills'),
+  path.join(baseDir, '.codex'),
+  path.join(baseDir, '.grok', 'skills', 'grill-plan-team'),
+  path.join(baseDir, '.grok', 'skills'),
+  path.join(baseDir, '.grok')
+];
+
 async function run(cliArgs = process.argv.slice(2)) {
   if (cliArgs.length > 0 && cliArgs[0] === 'assess') {
     await handleAssessCommand(cliArgs.slice(1));
@@ -1231,9 +1240,7 @@ async function run(cliArgs = process.argv.slice(2)) {
 
   if (options.uninstall) {
     console.log(`\nUninstalling grill-plan-team from ${options.isGlobal ? 'Global' : options.localPath}...`);
-    const manifest = loadManifest(manifestPath);
 
-    // Collect potential files to clean up
     const targetHarnesses = options.harnesses.length > 0 ? options.harnesses : HARNESSES;
     const filesToRemove = new Set();
 
@@ -1244,28 +1251,26 @@ async function run(cliArgs = process.argv.slice(2)) {
           filesToRemove.add(m.target);
         }
       }
-      if (h === 'cursor') {
-        const cursorSkill = path.join(baseDir, '.cursor', 'skills', 'grill-plan-team', 'SKILL.md');
-        if (fs.existsSync(cursorSkill)) {
-          filesToRemove.add(cursorSkill);
-        }
-      }
-    }
-
-    // If uninstalling ALL harnesses (no specific harness requested), include any remaining manifest files
-    if (options.harnesses.length === 0 && Array.isArray(manifest.installedFiles)) {
-      for (const f of manifest.installedFiles) {
-        if (fs.existsSync(f)) {
-          filesToRemove.add(f);
+      const entry = REGISTRY[h];
+      if (entry && typeof entry.cleanExtra === 'function') {
+        const extra = entry.cleanExtra(baseDir, options.isGlobal);
+        for (const ep of extra) {
+          if (fs.existsSync(ep)) {
+            filesToRemove.add(ep);
+          }
         }
       }
     }
 
     // If selective uninstallation, preserve .agents/skills if another agent harness is still installed
-    if (options.harnesses.length > 0 && fs.existsSync(manifestPath)) {
-      const remainingHarnesses = (manifest.harnesses || []).filter(h => !targetHarnesses.includes(h));
-      const agentHarnesses = ['kimi', 'hermes', 'pi', 'omp', 'opencode', 'codex', 'grok'];
-      if (remainingHarnesses.some(h => agentHarnesses.includes(h))) {
+    if (options.harnesses.length > 0) {
+      const agentHarnesses = Object.keys(AGENT_HARNESS_DEDICATED_FILES);
+      const remainingAgentHarnesses = agentHarnesses.filter(ah => !targetHarnesses.includes(ah));
+      const hasOtherAgent = remainingAgentHarnesses.some(ah => {
+        const dedicatedPath = AGENT_HARNESS_DEDICATED_FILES[ah](baseDir);
+        return fs.existsSync(dedicatedPath) && !filesToRemove.has(dedicatedPath);
+      });
+      if (hasOtherAgent) {
         filesToRemove.delete(path.join(baseDir, '.agents', 'skills', 'grill-plan-team', 'SKILL.md'));
       }
     }
@@ -1288,57 +1293,9 @@ async function run(cliArgs = process.argv.slice(2)) {
     }
 
     // Clean empty parent directories (hierarchical: deepest first)
-    const dirsToCheck = [
-      path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'skills'),
-      path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'rules'),
-      path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team'),
-      path.join(baseDir, '.gemini', 'config', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.claude', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.claude', 'skills'),
-      path.join(baseDir, '.claude', 'commands'),
-      path.join(baseDir, '.claude'),
-      path.join(baseDir, '.cursor', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.cursor', 'skills'),
-      path.join(baseDir, '.cursor', 'rules'),
-      path.join(baseDir, '.cursor'),
-      path.join(baseDir, 'skills', 'grill-plan-team'),
-      path.join(baseDir, 'skills'),
-      path.join(baseDir, 'rules'),
-      path.join(baseDir, '.agents', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.agents', 'skills'),
-      path.join(baseDir, '.agents'),
-      path.join(baseDir, '.kimi', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.kimi', 'skills'),
-      path.join(baseDir, '.kimi'),
-      path.join(baseDir, '.hermes', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.hermes', 'skills'),
-      path.join(baseDir, '.hermes'),
-      path.join(baseDir, '.pi', 'agent', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.pi', 'agent', 'skills'),
-      path.join(baseDir, '.pi', 'agent'),
-      path.join(baseDir, '.pi', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.pi', 'skills'),
-      path.join(baseDir, '.pi'),
-      path.join(baseDir, '.omp', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.omp', 'skills'),
-      path.join(baseDir, '.omp'),
-      path.join(baseDir, '.config', 'opencode', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.config', 'opencode', 'skills'),
-      path.join(baseDir, '.config', 'opencode'),
-      path.join(baseDir, '.opencode', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.opencode', 'skills'),
-      path.join(baseDir, '.opencode'),
-      path.join(baseDir, '.codex', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.codex', 'skills'),
-      path.join(baseDir, '.codex'),
-      path.join(baseDir, '.grok', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.grok', 'skills'),
-      path.join(baseDir, '.grok')
-    ];
-
     if (!options.dryRun) {
-      for (const d of dirsToCheck) {
+      const dirs = DIRS_TO_CLEAN(baseDir);
+      for (const d of dirs) {
         if (fs.existsSync(d)) {
           try {
             const items = fs.readdirSync(d);
@@ -1353,20 +1310,27 @@ async function run(cliArgs = process.argv.slice(2)) {
         updateGeminiPluginsJson(baseDir, options.dryRun, true);
       }
 
-      if (options.harnesses.length > 0 && fs.existsSync(manifestPath)) {
-        // Selective uninstallation: update manifest tracking
-        const remainingInstalled = (manifest.installedFiles || []).filter(f => !filesToRemove.has(f));
-        const remainingHarnesses = (manifest.harnesses || []).filter(h => !targetHarnesses.includes(h));
-        if (remainingHarnesses.length === 0 || remainingInstalled.length === 0) {
-          fs.unlinkSync(manifestPath);
+      // Handle legacy manifest file if present
+      if (fs.existsSync(manifestPath)) {
+        if (options.harnesses.length === 0) {
+          try { fs.unlinkSync(manifestPath); } catch {}
         } else {
-          manifest.installedFiles = remainingInstalled;
-          manifest.harnesses = remainingHarnesses;
-          manifest.updatedAt = new Date().toISOString();
-          saveManifest(manifestPath, manifest, false);
+          try {
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            const remainingInstalled = (manifest.installedFiles || []).filter(f => !filesToRemove.has(f));
+            const remainingHarnesses = (manifest.harnesses || []).filter(h => !targetHarnesses.includes(h));
+            if (remainingHarnesses.length === 0 || remainingInstalled.length === 0) {
+              fs.unlinkSync(manifestPath);
+            } else {
+              manifest.installedFiles = remainingInstalled;
+              manifest.harnesses = remainingHarnesses;
+              manifest.updatedAt = new Date().toISOString();
+              fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+            }
+          } catch {
+            try { fs.unlinkSync(manifestPath); } catch {}
+          }
         }
-      } else if (fs.existsSync(manifestPath)) {
-        fs.unlinkSync(manifestPath);
       }
 
       // Memory preservation / purge handling
@@ -1431,9 +1395,6 @@ async function run(cliArgs = process.argv.slice(2)) {
   console.log(`Selected harnesses: ${targetHarnesses.map(h => HARNESS_DISPLAY_NAMES[h]).join(', ')}`);
   if (options.dryRun) console.log(`Mode: DRY RUN (no files will be written)`);
 
-  const manifest = loadManifest(manifestPath);
-  const installedFiles = new Set(manifest.installedFiles || []);
-
   for (const h of targetHarnesses) {
     console.log(`\nConfiguring ${HARNESS_DISPLAY_NAMES[h]}...`);
     const mappings = getHarnessFileMappings(h, baseDir, options.isGlobal);
@@ -1443,7 +1404,6 @@ async function run(cliArgs = process.argv.slice(2)) {
         console.log(`[dry-run] Would write: ${m.target}`);
       } else {
         writeFileSyncSafe(m.target, m.content, false);
-        installedFiles.add(m.target);
         console.log(`Created: ${m.target}`);
       }
     }
@@ -1456,13 +1416,6 @@ async function run(cliArgs = process.argv.slice(2)) {
   // Auto-initialize global user memory if it does not exist
   const homeDir = options.isGlobal ? baseDir : getHomeDir();
   ensureUserMemory(homeDir, options.dryRun);
-
-  manifest.installedFiles = Array.from(installedFiles);
-  manifest.harnesses = Array.from(new Set([...(manifest.harnesses || []), ...targetHarnesses]));
-  manifest.updatedAt = new Date().toISOString();
-  manifest.version = '1.0.0';
-
-  saveManifest(manifestPath, manifest, options.dryRun);
 
   console.log(`\nInstallation successful!`);
   console.log(`Workflow installed across ${targetHarnesses.length} harness(es).`);
@@ -1479,6 +1432,7 @@ if (require.main === module) {
 module.exports = {
   HARNESSES,
   HARNESS_DISPLAY_NAMES,
+  REGISTRY,
   DEFAULT_USER_MEMORY,
   DEFAULT_PROJECT_MEMORY,
   DEFAULT_ASSESSMENT_TEMPLATE,
