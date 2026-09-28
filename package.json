@@ -1,0 +1,55 @@
+{
+  "name": "grill-plan-team",
+  "version": "1.0.0",
+  "description": "Cross-harness 3-phase gated development workflow (Grill-Me -> Plan -> Teamwork) for Antigravity, Claude Code, Cursor, Windsurf, and Roo Code / Cline.",
+  "main": "bin/install.js",
+  "bin": {
+    "grill-plan-team": "./bin/install.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tysongoulding/grill-plan-team.git"
+  },
+  "keywords": [
+    "grill-plan-team",
+    "workflow",
+    "planning",
+    "interview",
+    "teamwork",
+    "multi-agent",
+    "antigravity",
+    "gemini",
+    "claude-code",
+    "cursor",
+    "cursorrules",
+    "windsurf",
+    "roo-code",
+    "cline"
+  ],
+  "author": "Tyson Goulding",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tysongoulding/grill-plan-team/issues"
+  },
+  "homepage": "https://github.com/tysongoulding/grill-plan-team#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin",
+    "skills",
+    "rules",
+    "plugin.json",
+    "templates",
+    "install.sh",
+    ".claude",
+    ".cursor",
+    ".cursorrules",
+    ".windsurfrules",
+    ".roomodes",
+    ".clinerules"
+  ]
+}

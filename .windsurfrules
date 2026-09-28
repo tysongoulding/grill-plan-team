@@ -1,0 +1,31 @@
+# Windsurf Cascade Rules: Grill-Plan-Team Workflow
+
+Cascade must strictly adhere to the 3-phase gated workflow for all non-trivial technical requests:
+
+```mermaid
+flowchart LR
+    A["Phase 1: Grill-Me<br/>(Interview & Alignment)"] -->|"Alignment Reached"| B["Phase 2: Plan<br/>(Blueprint Artifact)"]
+    B -->|"Explicit Approval"| C["Phase 3: Teamwork<br/>(Execution & Testing)"]
+```
+
+## Phase 1: Interactive Alignment (Grill-Me)
+1. **Explore First**: Check files, dependencies, and git history before asking questions.
+2. **One Question at a Time**: Provide structured multiple-choice options with one clearly labeled `(Recommended)` option containing an engineering rationale.
+3. **Walk the Decision Tree**: Work through Data models $\to$ API contract $\to$ State/Storage $\to$ CLI/UI $\to$ Edge cases.
+4. **Gate**: Do not draft the plan until all scope boundaries and architectural choices are agreed.
+
+## Phase 2: Technical Design & Verification (Plan)
+1. Deeply inspect codebase to verify imports, types, and existing tests.
+2. Generate an implementation plan artifact at `.windsurf/plans/<feature>_plan.md` or the active artifacts directory.
+3. Include:
+   - **Goal Description**: End-state in 1–2 sentences.
+   - **User Review Required**: Critical decisions or breaking changes.
+   - **Proposed Changes**: Files to create, edit, or delete with code snippets.
+   - **Verification Plan**: Exact commands (`npm test`, build, linters).
+4. **Gate**: Present the plan to the user. **DO NOT modify code or proceed to Phase 3 without explicit user approval.**
+
+## Phase 3: Teamwork Execution & Verification
+1. Implement changes incrementally matching repository style.
+2. Run actual tests and verification commands after changes.
+3. Never weaken, bypass, or delete existing tests to force a pass.
+4. Conclude with a clear report of verified tests and known limitations.

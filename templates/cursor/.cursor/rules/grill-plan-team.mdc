@@ -1,0 +1,39 @@
+---
+description: Grill-Plan-Team 3-phase gated development workflow (Grill-Me interview -> Plan blueprint artifact -> Teamwork execution)
+globs: *
+alwaysApply: true
+---
+
+# Grill-Plan-Team Workflow for Cursor
+
+Apply this workflow whenever handling features, architecture designs, bug fixes, or refactors.
+
+```mermaid
+flowchart LR
+    A["Phase 1: Grill-Me<br/>(Interactive Interview)"] -->|"Alignment Reached"| B["Phase 2: Plan<br/>(Implementation Blueprint)"]
+    B -->|"Explicit Approval"| C["Phase 3: Teamwork<br/>(Execution & Verification)"]
+```
+
+## Phase 1: Interactive Alignment (Grill-Me)
+- **Explore Codebase First**: Search files, configs, tests, and dependencies before asking questions.
+- **One Question at a Time**: Never overwhelm the user. Present atomic multiple-choice decisions:
+  - `A) Option 1`
+  - `B) (Recommended) Option 2 - [concise rationale]`
+  - `C) Option 3`
+- **Walk the Decision Tree**: Systematically resolve Data models $\to$ API contracts $\to$ Storage/State $\to$ UI/CLI surface $\to$ Edge cases.
+- **Gate**: Phase 1 concludes only when all architectural decisions and scope boundaries are agreed.
+
+## Phase 2: Technical Design & Verification (Plan)
+- Inspect codebase thoroughly to ensure 100% technical feasibility.
+- Write an implementation plan artifact to `.cursor/plans/<feature>_plan.md` with:
+  1. Goal Description (1–2 sentences).
+  2. User Review Required (critical breaking changes or decisions).
+  3. Proposed Changes (files to create, modify, delete with diffs).
+  4. Objective Verification Plan (exact CLI test/build/lint commands).
+- **Gate**: Stop and ask for explicit approval before writing any implementation code.
+
+## Phase 3: Teamwork Execution & Verification
+- Implement the approved changes cleanly.
+- Verify work using real tests and typechecks.
+- Do not weaken tests to pass.
+- Provide a summary of changes, test verification results, and any remaining edge cases.

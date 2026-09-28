@@ -1,0 +1,26 @@
+# Cursor Rules: Grill-Plan-Team Workflow
+
+Always follow the **Grill-Me $\to$ Plan $\to$ Teamwork** 3-phase gated workflow for all non-trivial tasks, features, and refactors. Do not skip or blend phases.
+
+## Phase 1: Interactive Alignment (Grill-Me)
+- Before writing code or plans, explore the codebase to understand existing patterns and conventions.
+- Ask questions **one at a time**. Provide structured multiple-choice options for decisions.
+- Always include a `(Recommended)` option accompanied by an engineering rationale.
+- Walk the decision tree: Architecture $\to$ Data models $\to$ API contract $\to$ State/Storage $\to$ UI/CLI surface $\to$ Edge cases.
+- Conclude Phase 1 only when technical tradeoffs and boundaries are fully agreed upon.
+
+## Phase 2: Technical Design & Verification (Plan)
+- Formulate an actionable implementation blueprint.
+- Save to `.cursor/plans/<feature>_plan.md` or the project artifact directory.
+- Include:
+  1. Goal Description (1–2 sentences).
+  2. Critical Architectural Decisions agreed in Phase 1.
+  3. Proposed Changes (files to create, modify, delete with diffs).
+  4. Programmatic Verification Plan (exact test/build/lint commands).
+- **HALT before modifying code**: Prompt the user to review and explicitly approve the plan before proceeding to Phase 3.
+
+## Phase 3: Teamwork Execution & Verification
+- Execute changes step-by-step according to the approved plan.
+- Run tests and verification commands after each significant change.
+- Never weaken, bypass, or delete tests to achieve a passing state.
+- Deliver focused diffs and a completion summary distinguishing verified from unverified aspects.

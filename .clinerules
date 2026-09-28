@@ -1,0 +1,34 @@
+# Cline / Roo Code Rules: Grill-Plan-Team Workflow
+
+Operate strictly under the 3-phase gated development workflow:
+
+```mermaid
+flowchart LR
+    A["Phase 1: Grill-Me<br/>(Interview & Alignment)"] -->|"Aligned"| B["Phase 2: Plan<br/>(Blueprint Artifact)"]
+    B -->|"Approved"| C["Phase 3: Teamwork<br/>(Execution & Testing)"]
+```
+
+## Phase 1: Interactive Alignment (Grill-Me)
+- Search codebase patterns and configurations before asking questions.
+- Ask questions one at a time using structured multiple choice:
+  - `[A] Option 1`
+  - `[B] (Recommended) Option 2 - [concise engineering rationale]`
+  - `[C] Option 3`
+- Resolve decisions systematically: Data models $\to$ API contract $\to$ State/Storage $\to$ UI/CLI surface $\to$ Edge cases.
+- **Phase Gate**: Only proceed when all scope boundaries and architectural choices are agreed upon.
+
+## Phase 2: Technical Design & Verification (Plan)
+- Inspect codebase thoroughly to ensure 100% feasibility.
+- Write an implementation plan artifact to `.roo/plans/<feature>_plan.md` or the active task artifacts folder.
+- Detail:
+  - Goal Description (1–2 sentences).
+  - User Review Required (critical breaking changes or decisions).
+  - Proposed Changes (files to create, edit, delete with snippets).
+  - Programmatic Verification Plan (exact CLI test/build/lint commands).
+- **Phase Gate**: Stop and require explicit user approval before writing implementation code.
+
+## Phase 3: Teamwork Execution & Verification
+- Implement the approved changes cleanly.
+- Run actual tests and verification commands after changes.
+- Never weaken, bypass, or delete tests to achieve a passing state.
+- Provide a summary distinguishing verified from unverified aspects.
