@@ -953,7 +953,6 @@ for h in "${SELECTED_HARNESSES[@]}"; do
         write_file_safe "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/plugin.json" "$CONTENT_PLUGIN"
         write_file_safe "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/rules/AGENTS.md" "$CONTENT_RULES"
         write_file_safe "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
-        write_file_safe "${TARGET_DIR}/.gemini/config/skills/grill-plan-team/SKILL.md" "$CONTENT_SKILL"
         update_plugins_json "$TARGET_DIR" "add"
       else
         CONTENT_PLUGIN="$(get_file_content "antigravity/plugin.json")"

@@ -478,11 +478,6 @@ function getHarnessFileMappings(harness, baseDir, isGlobal) {
           target: path.join(pluginDir, 'skills', 'grill-plan-team', 'SKILL.md'),
           content: getTemplateContent('antigravity/skills/grill-plan-team/SKILL.md')
         });
-        // Core skills directory copy
-        mappings.push({
-          target: path.join(baseDir, '.gemini', 'config', 'skills', 'grill-plan-team', 'SKILL.md'),
-          content: getTemplateContent('antigravity/skills/grill-plan-team/SKILL.md')
-        });
       } else {
         mappings.push({
           target: path.join(baseDir, 'plugin.json'),
