@@ -5,8 +5,9 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/tysongoulding/grill-plan-team/releases)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
 
-> **A 3-phase gated workflow plugin for autonomous AI coding agents:**  
-> **Grill-Me** (interactive design alignment) $\to$ **Plan** (technical blueprint artifact) $\to$ **Teamwork** (multi-agent execution & verification).
+> **A self-contained, 3-phase gated workflow plugin for autonomous AI coding agents:**  
+> **Phase 1: Interactive Alignment** $\to$ **Phase 2: Technical Blueprint** $\to$ **Phase 3: Autonomous Execution & Verification**.  
+> Fully standalone with zero dependencies on external slash commands.
 
 Cross-harness plugin and installer support for **Antigravity / Gemini CLI**, **Claude Code**, **Cursor**, **Windsurf**, and **Roo Code / Cline**.
 
