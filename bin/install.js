@@ -66,13 +66,21 @@ function parseArgs(args) {
     } else if (arg === '--interactive') {
       options.interactive = true;
     } else if (arg === '--harness') {
-      if (args[i + 1]) {
+      if (args[i + 1] && !args[i + 1].startsWith('-')) {
         const parts = args[i + 1].split(',').map(s => s.trim().toLowerCase());
         options.harnesses.push(...parts);
         i++;
+      } else {
+        console.error('Error: --harness requires an argument.');
+        process.exit(1);
       }
     } else if (arg.startsWith('--harness=')) {
-      const parts = arg.slice('--harness='.length).split(',').map(s => s.trim().toLowerCase());
+      const val = arg.slice('--harness='.length).trim();
+      if (!val) {
+        console.error('Error: --harness requires an argument.');
+        process.exit(1);
+      }
+      const parts = val.split(',').map(s => s.trim().toLowerCase());
       options.harnesses.push(...parts);
     }
     i++;
@@ -412,16 +420,24 @@ async function run() {
     console.log(`\nUninstalling grill-plan-team from ${options.isGlobal ? 'Global' : options.localPath}...`);
     const manifest = loadManifest(manifestPath);
 
-    // Collect all potential files to clean up
+    // Collect potential files to clean up
     const targetHarnesses = options.harnesses.length > 0 ? options.harnesses : HARNESSES;
-    const filesToRemove = new Set(manifest.installedFiles || []);
+    const filesToRemove = new Set();
 
-    // Also populate from harness mappings if manifest was incomplete
     for (const h of targetHarnesses) {
       const mappings = getHarnessFileMappings(h, baseDir, options.isGlobal);
       for (const m of mappings) {
         if (fs.existsSync(m.target)) {
           filesToRemove.add(m.target);
+        }
+      }
+    }
+
+    // If uninstalling ALL harnesses (no specific harness requested), include any remaining manifest files
+    if (options.harnesses.length === 0 && Array.isArray(manifest.installedFiles)) {
+      for (const f of manifest.installedFiles) {
+        if (fs.existsSync(f)) {
+          filesToRemove.add(f);
         }
       }
     }
@@ -443,17 +459,22 @@ async function run() {
       }
     }
 
-    // Clean empty parent directories
+    // Clean empty parent directories (hierarchical: deepest first)
     const dirsToCheck = [
       path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'skills', 'grill-plan-team'),
-      path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'rules'),
       path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'skills'),
+      path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team', 'rules'),
       path.join(baseDir, '.gemini', 'config', 'plugins', 'grill-plan-team'),
       path.join(baseDir, '.gemini', 'config', 'skills', 'grill-plan-team'),
       path.join(baseDir, '.claude', 'skills', 'grill-plan-team'),
+      path.join(baseDir, '.claude', 'skills'),
       path.join(baseDir, '.claude', 'commands'),
+      path.join(baseDir, '.claude'),
       path.join(baseDir, '.cursor', 'rules'),
-      path.join(baseDir, 'skills', 'grill-plan-team')
+      path.join(baseDir, '.cursor'),
+      path.join(baseDir, 'skills', 'grill-plan-team'),
+      path.join(baseDir, 'skills'),
+      path.join(baseDir, 'rules')
     ];
 
     if (!options.dryRun) {
@@ -468,11 +489,23 @@ async function run() {
         }
       }
 
-      if (options.isGlobal) {
+      if (options.isGlobal && targetHarnesses.includes('antigravity')) {
         updateGeminiPluginsJson(baseDir, options.dryRun, true);
       }
 
-      if (fs.existsSync(manifestPath)) {
+      if (options.harnesses.length > 0 && fs.existsSync(manifestPath)) {
+        // Selective uninstallation: update manifest tracking
+        const remainingInstalled = (manifest.installedFiles || []).filter(f => !filesToRemove.has(f));
+        const remainingHarnesses = (manifest.harnesses || []).filter(h => !targetHarnesses.includes(h));
+        if (remainingHarnesses.length === 0) {
+          fs.unlinkSync(manifestPath);
+        } else {
+          manifest.installedFiles = remainingInstalled;
+          manifest.harnesses = remainingHarnesses;
+          manifest.updatedAt = new Date().toISOString();
+          saveManifest(manifestPath, manifest, false);
+        }
+      } else if (fs.existsSync(manifestPath)) {
         fs.unlinkSync(manifestPath);
       }
     }
@@ -493,10 +526,15 @@ async function run() {
       console.error(`Error: No valid harnesses specified. Choose from: ${HARNESSES.join(', ')}`);
       process.exit(1);
     }
-  } else if (options.interactive || (process.stdin.isTTY && process.stdout.isTTY)) {
-    targetHarnesses = await promptHarnesses(detected);
+  } else if (options.interactive) {
+    if (process.stdin.isTTY) {
+      targetHarnesses = await promptHarnesses(detected);
+    } else {
+      console.warn('Warning: Interactive mode requested but stdin is not a TTY. Falling back to auto-detection.');
+      targetHarnesses = detected.length > 0 ? detected : HARNESSES;
+    }
   } else {
-    // Non-interactive fallback: detected or all if none detected
+    // Default: auto-detection of host harnesses (or all if none detected)
     targetHarnesses = detected.length > 0 ? detected : HARNESSES;
   }
 

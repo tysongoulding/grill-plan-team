@@ -14,6 +14,7 @@ REQUESTED_HARNESSES=()
 DO_UNINSTALL=0
 DRY_RUN=0
 INTERACTIVE=0
+declare -a INSTALLED_FILES=()
 
 # Determine script directory if run from local filesystem
 SCRIPT_SOURCE="${BASH_SOURCE[0]:-}"
@@ -64,7 +65,8 @@ while [ $# -gt 0 ]; do
       ;;
     --local|-l)
       IS_GLOBAL=0
-      if [ $# -gt 1 ] && [[ "$2" != --* ]]; then
+      if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
+        mkdir -p "$2" 2>/dev/null || true
         TARGET_DIR="$(cd "$2" 2>/dev/null && pwd || echo "$2")"
         shift 2
       else
@@ -74,6 +76,7 @@ while [ $# -gt 0 ]; do
       ;;
     --local=*)
       IS_GLOBAL=0
+      mkdir -p "${1#*=}" 2>/dev/null || true
       TARGET_DIR="$(cd "${1#*=}" 2>/dev/null && pwd || echo "${1#*=}")"
       shift
       ;;
@@ -94,7 +97,7 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --harness)
-      if [ $# -gt 1 ]; then
+      if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
         IFS=',' read -ra ADDR <<< "$2"
         for i in "${ADDR[@]}"; do
           REQUESTED_HARNESSES+=("$i")
@@ -106,7 +109,12 @@ while [ $# -gt 0 ]; do
       fi
       ;;
     --harness=*)
-      IFS=',' read -ra ADDR <<< "${1#*=}"
+      val="${1#*=}"
+      if [ -z "$val" ]; then
+        echo "Error: --harness requires an argument." >&2
+        exit 1
+      fi
+      IFS=',' read -ra ADDR <<< "$val"
       for i in "${ADDR[@]}"; do
         REQUESTED_HARNESSES+=("$i")
       done
@@ -166,12 +174,18 @@ write_file_safe() {
   local target_dir
   target_dir="$(dirname "$target_path")"
 
+  if [ -z "$content" ]; then
+    echo "Error: retrieved empty content for $target_path" >&2
+    exit 1
+  fi
+
   if [ "$DRY_RUN" -eq 1 ]; then
     echo "[dry-run] Would write: $target_path"
   else
     mkdir -p "$target_dir"
     printf "%s\n" "$content" > "$target_path"
     echo "Created: $target_path"
+    INSTALLED_FILES+=("$target_path")
   fi
 }
 
@@ -257,37 +271,67 @@ MANIFEST_PATH="${TARGET_DIR}/${MANIFEST_FILE}"
 
 if [ "$DO_UNINSTALL" -eq 1 ]; then
   echo "=== Uninstalling grill-plan-team from ${TARGET_DIR} ==="
+  declare -a UNINSTALL_HARNESSES=()
+  if [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
+    for h in "${REQUESTED_HARNESSES[@]}"; do
+      case "$h" in
+        antigravity|gemini|agy) UNINSTALL_HARNESSES+=("antigravity") ;;
+        claude|claude-code) UNINSTALL_HARNESSES+=("claude") ;;
+        cursor) UNINSTALL_HARNESSES+=("cursor") ;;
+        windsurf) UNINSTALL_HARNESSES+=("windsurf") ;;
+        roo|cline|roo-code) UNINSTALL_HARNESSES+=("roo") ;;
+        *) echo "Warning: Unknown harness '$h' ignored." >&2 ;;
+      esac
+    done
+  else
+    UNINSTALL_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
+  fi
+
   declare -a UNINSTALL_FILES=()
 
-  # Common files
-  if [ "$IS_GLOBAL" -eq 1 ]; then
-    UNINSTALL_FILES+=(
-      "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/plugin.json"
-      "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/rules/AGENTS.md"
-      "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/skills/grill-plan-team/SKILL.md"
-      "${TARGET_DIR}/.gemini/config/skills/grill-plan-team/SKILL.md"
-      "${TARGET_DIR}/.claude/skills/grill-plan-team/SKILL.md"
-      "${TARGET_DIR}/.claude/commands/grill-plan-team.md"
-      "${TARGET_DIR}/.cursor/rules/grill-plan-team.mdc"
-      "${TARGET_DIR}/.cursorrules"
-      "${TARGET_DIR}/.windsurfrules"
-      "${TARGET_DIR}/.roomodes"
-      "${TARGET_DIR}/.clinerules"
-    )
-  else
-    UNINSTALL_FILES+=(
-      "${TARGET_DIR}/plugin.json"
-      "${TARGET_DIR}/rules/AGENTS.md"
-      "${TARGET_DIR}/skills/grill-plan-team/SKILL.md"
-      "${TARGET_DIR}/.claude/skills/grill-plan-team/SKILL.md"
-      "${TARGET_DIR}/.claude/commands/grill-plan-team.md"
-      "${TARGET_DIR}/.cursor/rules/grill-plan-team.mdc"
-      "${TARGET_DIR}/.cursorrules"
-      "${TARGET_DIR}/.windsurfrules"
-      "${TARGET_DIR}/.roomodes"
-      "${TARGET_DIR}/.clinerules"
-    )
-  fi
+  for h in "${UNINSTALL_HARNESSES[@]}"; do
+    case "$h" in
+      antigravity)
+        if [ "$IS_GLOBAL" -eq 1 ]; then
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/plugin.json"
+            "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/rules/AGENTS.md"
+            "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/skills/grill-plan-team/SKILL.md"
+            "${TARGET_DIR}/.gemini/config/skills/grill-plan-team/SKILL.md"
+          )
+        else
+          UNINSTALL_FILES+=(
+            "${TARGET_DIR}/plugin.json"
+            "${TARGET_DIR}/rules/AGENTS.md"
+            "${TARGET_DIR}/skills/grill-plan-team/SKILL.md"
+          )
+        fi
+        ;;
+      claude)
+        UNINSTALL_FILES+=(
+          "${TARGET_DIR}/.claude/skills/grill-plan-team/SKILL.md"
+          "${TARGET_DIR}/.claude/commands/grill-plan-team.md"
+        )
+        ;;
+      cursor)
+        UNINSTALL_FILES+=(
+          "${TARGET_DIR}/.cursor/rules/grill-plan-team.mdc"
+          "${TARGET_DIR}/.cursorrules"
+        )
+        ;;
+      windsurf)
+        UNINSTALL_FILES+=(
+          "${TARGET_DIR}/.windsurfrules"
+        )
+        ;;
+      roo)
+        UNINSTALL_FILES+=(
+          "${TARGET_DIR}/.roomodes"
+          "${TARGET_DIR}/.clinerules"
+        )
+        ;;
+    esac
+  done
 
   REMOVED_COUNT=0
   for f in "${UNINSTALL_FILES[@]}"; do
@@ -302,22 +346,34 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
     fi
   done
 
-  # Clean directories if empty
+  # Clean directories if empty (deepest first)
   if [ "$DRY_RUN" -eq 0 ]; then
     rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/skills/grill-plan-team" 2>/dev/null || true
-    rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/rules" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/rules" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.gemini/config/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.gemini/config/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.gemini/config" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.claude/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.claude/skills" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.claude/commands" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.claude" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.cursor/rules" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/.cursor" 2>/dev/null || true
     rmdir "${TARGET_DIR}/skills/grill-plan-team" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/skills" 2>/dev/null || true
+    rmdir "${TARGET_DIR}/rules" 2>/dev/null || true
 
-    if [ "$IS_GLOBAL" -eq 1 ]; then
-      update_plugins_json "$TARGET_DIR" "remove"
+    for uh in "${UNINSTALL_HARNESSES[@]}"; do
+      if [ "$uh" = "antigravity" ] && [ "$IS_GLOBAL" -eq 1 ]; then
+        update_plugins_json "$TARGET_DIR" "remove"
+      fi
+    done
+
+    if [ ${#REQUESTED_HARNESSES[@]} -eq 0 ]; then
+      rm -f "$MANIFEST_PATH"
     fi
-    rm -f "$MANIFEST_PATH"
   fi
 
   echo "Uninstallation complete. Cleaned ${REMOVED_COUNT} file(s)."
@@ -346,27 +402,36 @@ elif [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
       *) echo "Warning: Unknown harness '$h' ignored." >&2 ;;
     esac
   done
-elif [ "$INTERACTIVE" -eq 1 ] && [ -t 0 ]; then
-  echo "Detected harnesses: ${DETECTED[*]:-none}"
-  echo "Select target:"
-  echo "  1) Antigravity / Gemini CLI"
-  echo "  2) Claude Code"
-  echo "  3) Cursor"
-  echo "  4) Windsurf"
-  echo "  5) Roo Code / Cline"
-  echo "  A) All harnesses"
-  echo "  D) Detected harnesses only"
-  read -r -p "Enter choice [D]: " choice
-  choice="$(echo "$choice" | tr '[:lower:]' '[:upper:]')"
-  case "$choice" in
-    A) SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo") ;;
-    1) SELECTED_HARNESSES=("antigravity") ;;
-    2) SELECTED_HARNESSES=("claude") ;;
-    3) SELECTED_HARNESSES=("cursor") ;;
-    4) SELECTED_HARNESSES=("windsurf") ;;
-    5) SELECTED_HARNESSES=("roo") ;;
-    *) SELECTED_HARNESSES=("${DETECTED[@]:-antigravity}") ;;
-  esac
+elif [ "$INTERACTIVE" -eq 1 ]; then
+  if [ -t 0 ]; then
+    echo "Detected harnesses: ${DETECTED[*]:-none}"
+    echo "Select target:"
+    echo "  1) Antigravity / Gemini CLI"
+    echo "  2) Claude Code"
+    echo "  3) Cursor"
+    echo "  4) Windsurf"
+    echo "  5) Roo Code / Cline"
+    echo "  A) All harnesses"
+    echo "  D) Detected harnesses only"
+    read -r -p "Enter choice [D]: " choice
+    choice="$(echo "$choice" | tr '[:lower:]' '[:upper:]')"
+    case "$choice" in
+      A) SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo") ;;
+      1) SELECTED_HARNESSES=("antigravity") ;;
+      2) SELECTED_HARNESSES=("claude") ;;
+      3) SELECTED_HARNESSES=("cursor") ;;
+      4) SELECTED_HARNESSES=("windsurf") ;;
+      5) SELECTED_HARNESSES=("roo") ;;
+      *) SELECTED_HARNESSES=("${DETECTED[@]:-antigravity}") ;;
+    esac
+  else
+    echo "Warning: Interactive mode requested but stdin is not a TTY. Falling back to auto-detection." >&2
+    if [ ${#DETECTED[@]} -gt 0 ]; then
+      SELECTED_HARNESSES=("${DETECTED[@]}")
+    else
+      SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
+    fi
+  fi
 else
   if [ ${#DETECTED[@]} -gt 0 ]; then
     SELECTED_HARNESSES=("${DETECTED[@]}")
@@ -441,6 +506,7 @@ done
 if [ "$DRY_RUN" -eq 0 ]; then
   cat > "$MANIFEST_PATH" << EOF
 {
+  "installedFiles": [$(printf '"%s",' "${INSTALLED_FILES[@]}" | sed 's/,$//')],
   "harnesses": [$(printf '"%s",' "${SELECTED_HARNESSES[@]}" | sed 's/,$//')],
   "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
   "version": "1.0.0"

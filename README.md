@@ -77,9 +77,14 @@ flowchart LR
 
 Zero runtime dependencies. You can install via `curl`, `npx`, or local clone:
 
-### 1. One-Line Curl Installer (Recommended)
+### 1. One-Line Installer (Recommended)
+Using `curl`:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tysongoulding/grill-plan-team/main/install.sh | bash
+```
+Or using `wget`:
+```bash
+wget -qO- https://raw.githubusercontent.com/tysongoulding/grill-plan-team/main/install.sh | bash
 ```
 
 ### 2. Node / NPX

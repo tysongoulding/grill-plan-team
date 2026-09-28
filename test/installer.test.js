@@ -181,6 +181,36 @@ describe('Shell Installer (install.sh)', () => {
     assert.ok(fs.existsSync(unrelatedFile), 'Unrelated user file was preserved');
     assert.strictEqual(fs.readFileSync(unrelatedFile, 'utf8'), 'Do not delete me!');
   });
+
+  test('install.sh short options (-l, -d) parse correctly', () => {
+    const res = execFileSync('bash', [INSTALL_SH, '-l', tmpDir, '-d'], { encoding: 'utf8' });
+    assert.ok(res.includes('[dry-run] Would write'));
+    assert.strictEqual(fs.readdirSync(tmpDir).length, 0, 'No files written in dry-run');
+  });
+
+  test('install.sh supports selective uninstallation of single harness', () => {
+    // Install all harnesses
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.windsurfrules')));
+    assert.ok(fs.existsSync(path.join(tmpDir, 'plugin.json')));
+
+    // Unlink only cursor
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'cursor', '--uninstall'], { encoding: 'utf8' });
+
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor rules removed');
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.cursor', 'rules', 'grill-plan-team.mdc')), 'Cursor MDC removed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.windsurfrules')), 'Windsurf rules preserved');
+    assert.ok(fs.existsSync(path.join(tmpDir, 'plugin.json')), 'Antigravity plugin.json preserved');
+  });
+
+  test('install.sh cleans empty directories on complete uninstall', () => {
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--uninstall'], { encoding: 'utf8' });
+
+    const remaining = fs.readdirSync(tmpDir);
+    assert.strictEqual(remaining.length, 0, 'Clean directory left empty after complete uninstall');
+  });
 });
 
 describe('Node Installer CLI (bin/install.js)', () => {
@@ -239,6 +269,38 @@ describe('Node Installer CLI (bin/install.js)', () => {
     assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), '.cursorrules removed');
     assert.ok(fs.existsSync(userSecret), 'Unrelated user config preserved');
     assert.strictEqual(fs.readFileSync(userSecret, 'utf8'), '{"api_key": "12345"}');
+  });
+
+  test('bin/install.js --local runs with auto-detection without hanging', () => {
+    // Should complete cleanly and not hang waiting on interactive stdin
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')));
+  });
+
+  test('bin/install.js supports selective uninstallation of single harness and updates manifest', () => {
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')));
+
+    // Selective uninstall of cursor
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'cursor', '--uninstall'], { encoding: 'utf8' });
+
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor rules removed');
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.cursor', 'rules', 'grill-plan-team.mdc')), 'Cursor MDC removed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')), 'Roo modes preserved');
+
+    // Manifest should still exist and not have cursor
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
+    assert.ok(!manifest.harnesses.includes('cursor'), 'Manifest removed cursor');
+    assert.ok(manifest.harnesses.includes('roo'), 'Manifest preserved roo');
+  });
+
+  test('bin/install.js cleans empty directories on complete uninstall', () => {
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--uninstall'], { encoding: 'utf8' });
+
+    const remaining = fs.readdirSync(tmpDir);
+    assert.strictEqual(remaining.length, 0, 'Clean directory left empty after complete uninstall');
   });
 
   test('Simulated global install updates ~/.gemini/config/plugins.json and uninstalls cleanly', () => {
