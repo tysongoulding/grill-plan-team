@@ -529,3 +529,244 @@ describe('Cross-Harness Parity & Byte Integrity', () => {
   });
 });
 
+describe('Two-Tier Recursive Memory Engine', () => {
+  let tmpDir;
+  let fakeHome;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-mem-test-'));
+    fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-fake-home-'));
+  });
+
+  afterEach(() => {
+    if (tmpDir && fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+    if (fakeHome && fs.existsSync(fakeHome)) fs.rmSync(fakeHome, { recursive: true, force: true });
+  });
+
+  test('Memory template files exist and contain required schema sections', () => {
+    const userMemPath = path.join(REPO_ROOT, 'templates', 'memory', 'user-memory.md');
+    const projMemPath = path.join(REPO_ROOT, 'templates', 'memory', 'project-memory.md');
+
+    assert.ok(fs.existsSync(userMemPath), 'user-memory.md template exists');
+    assert.ok(fs.existsSync(projMemPath), 'project-memory.md template exists');
+
+    const userContent = fs.readFileSync(userMemPath, 'utf8');
+    assert.ok(userContent.includes('# Global User Memory (grill-plan-team)'));
+    assert.ok(userContent.includes('## Developer Profile & Interaction Style'));
+    assert.ok(userContent.includes('## Preferred Tech Stacks & Tooling'));
+    assert.ok(userContent.includes('## Architectural Heuristics'));
+    assert.ok(userContent.includes('## Workflow Habits & Overrides'));
+
+    const projContent = fs.readFileSync(projMemPath, 'utf8');
+    assert.ok(projContent.includes('# Local Project Memory (grill-plan-team)'));
+    assert.ok(projContent.includes('## Project Archetype & Domain Terminology'));
+    assert.ok(projContent.includes('## Established Repository Conventions'));
+    assert.ok(projContent.includes('## Architectural Decision History'));
+    assert.ok(projContent.includes('## Past Pitfalls & Reviewer Lessons'));
+  });
+
+  test('SKILL.md and all harness templates include Step 0 Memory Recall and Phase 4 Reflection & Distillation', () => {
+    const files = [
+      path.join(REPO_ROOT, 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, 'rules', 'AGENTS.md'),
+      path.join(REPO_ROOT, '.claude', 'skills', 'grill-plan-team', 'SKILL.md'),
+      path.join(REPO_ROOT, '.claude', 'commands', 'grill-plan-team.md'),
+      path.join(REPO_ROOT, '.cursorrules'),
+      path.join(REPO_ROOT, '.cursor', 'rules', 'grill-plan-team.mdc'),
+      path.join(REPO_ROOT, '.windsurfrules'),
+      path.join(REPO_ROOT, '.roomodes'),
+      path.join(REPO_ROOT, '.clinerules')
+    ];
+
+    for (const file of files) {
+      assert.ok(fs.existsSync(file), `File exists: ${file}`);
+      const content = fs.readFileSync(file, 'utf8');
+      const hasStep0 = content.includes('Step 0') || content.includes('Memory Recall') || content.includes('Recall');
+      const hasPhase4 = content.includes('Phase 4') || content.includes('Reflection') || content.includes('Distill');
+      assert.ok(hasStep0, `${path.basename(file)} contains Step 0 Memory Recall`);
+      assert.ok(hasPhase4, `${path.basename(file)} contains Phase 4 Reflection & Distillation`);
+    }
+  });
+
+  test('bin/install.js memory subcommands (path, init, show)', () => {
+    // memory path
+    const userPathRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    }).trim();
+    assert.strictEqual(userPathRes, path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md'));
+
+    const projPathRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projPathRes, path.join(tmpDir, '.grill-plan-team', 'project-memory.md'));
+
+    // memory init --project
+    const initProjRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.ok(initProjRes.includes('Initialized project memory'));
+    const projMemFile = path.join(tmpDir, '.grill-plan-team', 'project-memory.md');
+    assert.ok(fs.existsSync(projMemFile));
+    const projContent = fs.readFileSync(projMemFile, 'utf8');
+    assert.ok(projContent.includes('## Established Repository Conventions'));
+    assert.ok(projContent.includes('## Architectural Decision History'));
+
+    // memory show --project
+    const showProjRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'show', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.strictEqual(showProjRes, projContent);
+
+    // memory init --user
+    const initUserRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(initUserRes.includes('Initialized user memory'));
+    const userMemFile = path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md');
+    assert.ok(fs.existsSync(userMemFile));
+    const userContent = fs.readFileSync(userMemFile, 'utf8');
+    assert.ok(userContent.includes('## Developer Profile & Interaction Style'));
+
+    // memory show --user
+    const showUserRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'show', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.strictEqual(showUserRes, userContent);
+
+    // memory show on nonexistent file throws exit code 1
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, 'memory', 'show', '--user'], {
+        encoding: 'utf8',
+        env: { ...process.env, HOME: path.join(fakeHome, 'nonexistent') },
+        stdio: 'pipe'
+      });
+    });
+  });
+
+  test('install.sh memory subcommands (path, init, show)', () => {
+    // memory path
+    const userPathRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    }).trim();
+    assert.strictEqual(userPathRes, path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md'));
+
+    const projPathRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(projPathRes, path.join(tmpDir, '.grill-plan-team', 'project-memory.md'));
+
+    // memory init --project
+    const initProjRes = execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.ok(initProjRes.includes('Initialized project memory'));
+    const projMemFile = path.join(tmpDir, '.grill-plan-team', 'project-memory.md');
+    assert.ok(fs.existsSync(projMemFile));
+    const projContent = fs.readFileSync(projMemFile, 'utf8');
+    assert.ok(projContent.includes('## Established Repository Conventions'));
+    assert.ok(projContent.includes('## Architectural Decision History'));
+
+    // memory show --project
+    const showProjRes = execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.strictEqual(showProjRes, projContent);
+
+    // memory init --user
+    const initUserRes = execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(initUserRes.includes('Initialized user memory'));
+    const userMemFile = path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md');
+    assert.ok(fs.existsSync(userMemFile));
+
+    // memory show --user
+    const showUserRes = execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--user'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(showUserRes.includes('## Developer Profile & Interaction Style'));
+  });
+
+  test('Auto-initialization on global install and preservation on uninstall without --purge', () => {
+    const userMem = path.join(fakeHome, '.config', 'grill-plan-team', 'user-memory.md');
+
+    // Run global install with node CLI
+    execFileSync('node', [BIN_INSTALL_JS, '--all'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(fs.existsSync(userMem), 'user-memory.md was auto-initialized by bin/install.js');
+
+    // Append custom preference to user memory
+    fs.appendFileSync(userMem, '\n- Custom user preference 123');
+
+    // Run uninstall without --purge
+    execFileSync('node', [BIN_INSTALL_JS, '--uninstall'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(fs.existsSync(userMem), 'user-memory.md was preserved during uninstall without --purge');
+    assert.ok(fs.readFileSync(userMem, 'utf8').includes('Custom user preference 123'));
+
+    // Run uninstall with --purge
+    execFileSync('node', [BIN_INSTALL_JS, '--uninstall', '--purge'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(!fs.existsSync(userMem), 'user-memory.md was removed during uninstall with --purge');
+
+    // Repeat verification with install.sh
+    execFileSync('bash', [INSTALL_SH, '--all'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(fs.existsSync(userMem), 'user-memory.md was auto-initialized by install.sh');
+
+    // Uninstall without --purge
+    execFileSync('bash', [INSTALL_SH, '--uninstall'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(fs.existsSync(userMem), 'user-memory.md was preserved by install.sh without --purge');
+
+    // Uninstall with --purge
+    execFileSync('bash', [INSTALL_SH, '--uninstall', '--purge'], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: fakeHome }
+    });
+    assert.ok(!fs.existsSync(userMem), 'user-memory.md was removed by install.sh with --purge');
+  });
+
+  test('Local project uninstall preserves .grill-plan-team/project-memory.md unless --purge is passed', () => {
+    const projMem = path.join(tmpDir, '.grill-plan-team', 'project-memory.md');
+
+    // Init project memory and install local harnesses
+    execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project', '-l', tmpDir]);
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--all']);
+    assert.ok(fs.existsSync(projMem));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')));
+
+    // Uninstall without --purge
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--uninstall']);
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Harness files removed');
+    assert.ok(fs.existsSync(projMem), 'Project memory preserved without --purge');
+
+    // Uninstall with --purge
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--uninstall', '--purge']);
+    assert.ok(!fs.existsSync(projMem), 'Project memory removed with --purge');
+  });
+});
+
+

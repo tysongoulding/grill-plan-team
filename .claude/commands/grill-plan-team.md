@@ -1,9 +1,11 @@
 # /grill-plan-team [feature or goal]
 
-Initiates the 3-phase gated workflow for the specified task or feature:
-1. **Grill-Me**: Conduct an interactive architectural interview (one question at a time, always provide `(Recommended)` options with rationale, explore codebase first).
-2. **Plan**: Generate an implementation plan artifact with architectural decisions, file changes, and verification commands. Stop and wait for user approval.
-3. **Teamwork**: Delegate and execute the plan using multi-agent task execution and programmatic verification.
+Initiates the gated development workflow with two-tier recursive memory for the specified task or feature:
+0. **Step 0 (Recall)**: Ingest global user memory (`~/.config/grill-plan-team/user-memory.md`) and project memory (`.grill-plan-team/project-memory.md`).
+1. **Phase 1 (Grill-Me)**: Conduct an adaptive architectural interview (skip answered questions, provide `(Recommended)` options with memory attribution, explore codebase first).
+2. **Phase 2 (Plan)**: Generate an implementation plan artifact grounded in repository conventions and past ADRs. Stop and wait for user approval.
+3. **Phase 3 (Teamwork)**: Execute the plan using autonomous task execution and programmatic verification.
+4. **Phase 4 (Distill)**: Distill interview overrides, architectural decisions, and testing lessons back into persistent memory.
 
 ---
 
@@ -11,23 +13,35 @@ Initiates the 3-phase gated workflow for the specified task or feature:
 
 When the user runs `/grill-plan-team $ARGUMENTS`:
 
-1. **Check Phase 1 (Grill-Me)**:
+0. **Step 0: Memory Recall**:
+   - Check if `~/.config/grill-plan-team/user-memory.md` exists and ingest global developer preferences.
+   - Check if `.grill-plan-team/project-memory.md` exists and ingest repository conventions, ADRs, and known pitfalls.
+
+1. **Phase 1: Adaptive Alignment (Grill-Me)**:
    - Identify the primary technical domains and uncertainties of `$ARGUMENTS`.
+   - Skip trivial questions already resolved in user or project memory.
    - Explore existing codebase patterns, configurations, and dependencies.
    - Formulate the first architectural decision question with structured multiple choice options:
      - `A) Option 1`
-     - `B) (Recommended) Option 2 - [Concise engineering rationale]`
+     - `B) (Recommended) Option 2 - [Concise engineering rationale] (Aligned with user/project memory)`
      - `C) Option 3`
    - Ask only ONE question and pause for the user's answer.
    - Continue walking the decision tree until all scope boundaries, data models, and edge cases are agreed upon.
 
-2. **Phase 2 (Plan)**:
+2. **Phase 2: Technical Design & Verification (Plan)**:
    - Once alignment is achieved, write an implementation blueprint artifact to `.claude/plans/<feature>_plan.md` or the active artifacts folder.
+   - Ground changes in established conventions, past ADRs, and pitfall avoidance.
    - Outline goal, review items, file diffs, and verification commands (`npm test`, typecheck, etc.).
    - Explicitly ask the user: *"Does this plan meet your expectations? Please approve to proceed to Phase 3 (Teamwork execution)."*
    - **Do NOT begin code modification until the user explicitly approves.**
 
-3. **Phase 3 (Teamwork)**:
+3. **Phase 3: Multi-Agent Task Execution (Teamwork)**:
    - Execute the approved plan.
    - Verify every requirement using the programmatic verification commands.
    - Report results with verified vs unverified items and diff summary.
+
+4. **Phase 4: Reflection & Distillation Loop**:
+   - Distill new user choices into `~/.config/grill-plan-team/user-memory.md`.
+   - Append locked architectural decisions to `.grill-plan-team/project-memory.md` (`## Architectural Decision History`).
+   - Append debugging/reviewer lessons to `.grill-plan-team/project-memory.md` (`## Past Pitfalls & Reviewer Lessons`).
+   - Enforce deduplication and concise bullet points.

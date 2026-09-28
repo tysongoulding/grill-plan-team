@@ -12,6 +12,7 @@ TARGET_DIR="$HOME"
 ALL_HARNESSES=0
 REQUESTED_HARNESSES=()
 DO_UNINSTALL=0
+DO_PURGE=0
 DRY_RUN=0
 INTERACTIVE=0
 declare -a INSTALLED_FILES=()
@@ -24,12 +25,233 @@ else
   REPO_DIR=""
 fi
 
+# Fetch or read file content
+get_file_content() {
+  local rel_path="$1"
+  if [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/templates/$rel_path" ]; then
+    cat "$REPO_DIR/templates/$rel_path"
+  elif [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/$rel_path" ]; then
+    cat "$REPO_DIR/$rel_path"
+  else
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL "${RAW_BASE}/templates/${rel_path}" 2>/dev/null || curl -fsSL "${RAW_BASE}/${rel_path}"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -qO- "${RAW_BASE}/templates/${rel_path}" 2>/dev/null || wget -qO- "${RAW_BASE}/${rel_path}"
+    else
+      echo "Error: neither curl nor wget available to fetch ${rel_path}" >&2
+      exit 1
+    fi
+  fi
+}
+
+get_memory_template() {
+  local kind="$1"
+  local content=""
+  if [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/templates/memory/${kind}-memory.md" ]; then
+    cat "$REPO_DIR/templates/memory/${kind}-memory.md"
+    return
+  fi
+  if command -v curl >/dev/null 2>&1; then
+    content="$(curl -fsSL "${RAW_BASE}/templates/memory/${kind}-memory.md" 2>/dev/null || true)"
+  elif command -v wget >/dev/null 2>&1; then
+    content="$(wget -qO- "${RAW_BASE}/templates/memory/${kind}-memory.md" 2>/dev/null || true)"
+  fi
+  if [ -n "$content" ]; then
+    printf "%s\n" "$content"
+    return
+  fi
+
+  if [ "$kind" = "user" ]; then
+    cat << 'EOF'
+# Global User Memory (grill-plan-team)
+
+Personal developer profile and global engineering preferences across all projects.
+
+## Developer Profile & Interaction Style
+- Preferred interaction cadence: direct, concise, technical rationale first.
+- Decision preference: present structured multiple-choice recommendations with trade-offs.
+
+## Preferred Tech Stacks & Tooling
+- Architecture: modular, minimal runtime dependencies, clean interface boundaries.
+- Runtime & language preferences: modern LTS Node.js / TypeScript / native tooling where applicable.
+- Testing preference: native test runners (e.g. node:test), zero unnecessary testing frameworks.
+
+## Architectural Heuristics
+- Single Responsibility & High Cohesion: keep diffs focused on the exact requested requirement.
+- Defensive boundaries: validate inputs at integration seams, keep core logic free of external bloat.
+- Self-contained systems: prefer standalone scripts and zero-dependency utilities.
+
+## Workflow Habits & Overrides
+- Prioritize non-breaking changes and backward compatibility.
+- Ensure thorough automated verification before certifying changes.
+EOF
+  else
+    cat << 'EOF'
+# Local Project Memory (grill-plan-team)
+
+Repository-specific context, conventions, architectural decisions, and learned lessons.
+
+## Project Archetype & Domain Terminology
+- Archetype: Cross-harness AI agent workflow engine and installer CLI.
+- Domain terms:
+  - Harness: Target IDE or coding agent host (Antigravity, Claude Code, Cursor, Windsurf, Roo Code).
+  - 3-Phase Gate: Grill-Me (interview) -> Plan (blueprint) -> Teamwork (execution).
+  - Two-Tier Memory: Global user profile (~/.config/grill-plan-team) + local project memory (.grill-plan-team).
+
+## Established Repository Conventions
+- Dependencies: Zero external runtime dependencies; use native Node.js / POSIX bash APIs.
+- Testing: node:test with strict parity testing between install.sh and bin/install.js.
+- Governance: Gated phase progression; changes committed cleanly to git.
+
+## Architectural Decision History
+- [Initial Bootstrap]: Established unified 3-phase gated pipeline with cross-harness parity.
+
+## Past Pitfalls & Reviewer Lessons
+- Parity requirement: Any CLI or template change must be mirrored across both bin/install.js and install.sh.
+- Path normalization: Always resolve paths and trim whitespace when handling user inputs.
+EOF
+  fi
+}
+
+print_memory_help() {
+  cat << 'EOF'
+Grill-Plan-Team Two-Tier Memory CLI
+
+Usage:
+  ./install.sh memory init [--project | --user]
+  ./install.sh memory show [--project | --user]
+  ./install.sh memory path [--project | --user]
+
+Options:
+  --user, -u          Target global user memory (~/.config/grill-plan-team/user-memory.md) (default)
+  --project, -p       Target local project memory (.grill-plan-team/project-memory.md)
+  --local, -l [path]  Target specific project directory for --project
+  --force, -f         Force overwrite of existing memory file on init
+  --help, -h          Show this help message
+EOF
+}
+
+# Handle memory subcommand if requested
+if [ "${1:-}" = "memory" ]; then
+  shift
+  subcmd="${1:-}"
+  if [ -n "$subcmd" ] && [[ "$subcmd" != -* ]]; then
+    shift
+  else
+    subcmd=""
+  fi
+  mem_target="user"
+  mem_local_path=""
+  mem_force=0
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --user|-u)
+        mem_target="user"
+        shift
+        ;;
+      --project|-p)
+        mem_target="project"
+        shift
+        ;;
+      --force|-f)
+        mem_force=1
+        shift
+        ;;
+      --local|-l)
+        if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
+          mem_local_path="$(echo "$2" | xargs)"
+          shift 2
+        else
+          mem_local_path="$(pwd)"
+          shift
+        fi
+        ;;
+      --local=*|-l=*)
+        raw_val="${1#*=}"
+        mem_local_path="$(echo "$raw_val" | xargs)"
+        shift
+        ;;
+      --help|-h)
+        print_memory_help
+        exit 0
+        ;;
+      *)
+        echo "Error: Unknown memory option: $1" >&2
+        print_memory_help
+        exit 1
+        ;;
+    esac
+  done
+
+  mem_home="${HOME}"
+  mem_base="${mem_local_path:-$(pwd)}"
+
+  case "$subcmd" in
+    path)
+      if [ "$mem_target" = "project" ]; then
+        echo "${mem_base}/.grill-plan-team/project-memory.md"
+      else
+        echo "${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
+      fi
+      exit 0
+      ;;
+    init)
+      if [ "$mem_target" = "project" ]; then
+        target_file="${mem_base}/.grill-plan-team/project-memory.md"
+        if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
+          echo "Project memory already exists at: $target_file"
+        else
+          content="$(get_memory_template "project")"
+          mkdir -p "$(dirname "$target_file")"
+          printf "%s\n" "$content" > "$target_file"
+          echo "Initialized project memory: $target_file"
+        fi
+      else
+        target_file="${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
+        if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
+          echo "User memory already exists at: $target_file"
+        else
+          content="$(get_memory_template "user")"
+          mkdir -p "$(dirname "$target_file")"
+          printf "%s\n" "$content" > "$target_file"
+          echo "Initialized user memory: $target_file"
+        fi
+      fi
+      exit 0
+      ;;
+    show)
+      if [ "$mem_target" = "project" ]; then
+        target_file="${mem_base}/.grill-plan-team/project-memory.md"
+      else
+        target_file="${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
+      fi
+      if [ ! -f "$target_file" ]; then
+        echo "Error: Memory file not found at $target_file" >&2
+        exit 1
+      fi
+      cat "$target_file"
+      exit 0
+      ;;
+    --help|-h|"")
+      print_memory_help
+      exit 0
+      ;;
+    *)
+      echo "Error: Unknown memory subcommand: $subcmd" >&2
+      print_memory_help
+      exit 1
+      ;;
+  esac
+fi
+
 print_help() {
   cat << 'EOF'
 Grill-Plan-Team Universal Shell Installer
 
 Usage:
   ./install.sh [options]
+  ./install.sh memory <subcommand> [options]
   curl -fsSL https://raw.githubusercontent.com/tysongoulding/grill-plan-team/main/install.sh | bash -s -- [options]
 
 Options:
@@ -38,9 +260,15 @@ Options:
   --all, -a             Install to all supported harnesses regardless of host detection
   --harness <name>      Target specific harness(es): antigravity, claude, cursor, windsurf, roo
   --uninstall, -u       Cleanly remove installed grill-plan-team configurations
+  --purge               Purge persistent memory files when uninstalling
   --dry-run, -d         Preview changes without modifying the filesystem
   --interactive         Prompt for target harnesses interactively
   --help, -h            Show this help documentation
+
+Memory Commands:
+  ./install.sh memory init [--project | --user]
+  ./install.sh memory show [--project | --user]
+  ./install.sh memory path [--project | --user]
 
 Supported Harnesses:
   * antigravity   Antigravity / Gemini CLI (~/.gemini/config/plugins/grill-plan-team)
@@ -97,6 +325,10 @@ while [ $# -gt 0 ]; do
       ;;
     --uninstall|-u)
       DO_UNINSTALL=1
+      shift
+      ;;
+    --purge)
+      DO_PURGE=1
       shift
       ;;
     --dry-run|-d)
@@ -216,25 +448,6 @@ has_windsurf() {
 
 has_roo() {
   [ -f "$HOME/.roomodes" ] || [ -f "$HOME/.clinerules" ] || [ -d "$HOME/.config/Code/User/globalStorage/rooveterinaryinc.roo-cline" ]
-}
-
-# Fetch or read file content
-get_file_content() {
-  local rel_path="$1"
-  if [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/templates/$rel_path" ]; then
-    cat "$REPO_DIR/templates/$rel_path"
-  elif [ -n "$REPO_DIR" ] && [ -f "$REPO_DIR/$rel_path" ]; then
-    cat "$REPO_DIR/$rel_path"
-  else
-    if command -v curl >/dev/null 2>&1; then
-      curl -fsSL "${RAW_BASE}/templates/${rel_path}" 2>/dev/null || curl -fsSL "${RAW_BASE}/${rel_path}"
-    elif command -v wget >/dev/null 2>&1; then
-      wget -qO- "${RAW_BASE}/templates/${rel_path}" 2>/dev/null || wget -qO- "${RAW_BASE}/${rel_path}"
-    else
-      echo "Error: neither curl nor wget available to fetch ${rel_path}" >&2
-      exit 1
-    fi
-  fi
 }
 
 write_file_safe() {
@@ -570,6 +783,20 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
     fi
   done
 
+  if [ "$DO_PURGE" -eq 1 ] && [ "$DRY_RUN" -eq 1 ]; then
+    if [ "$IS_GLOBAL" -eq 1 ]; then
+      PURGE_FILE="${XDG_CONFIG_HOME:-$TARGET_DIR/.config}/grill-plan-team/user-memory.md"
+      if [ -f "$PURGE_FILE" ]; then
+        echo "[dry-run] Would purge: $PURGE_FILE"
+      fi
+    else
+      PURGE_FILE="${TARGET_DIR}/.grill-plan-team/project-memory.md"
+      if [ -f "$PURGE_FILE" ]; then
+        echo "[dry-run] Would purge: $PURGE_FILE"
+      fi
+    fi
+  fi
+
   # Clean directories if empty (deepest first)
   if [ "$DRY_RUN" -eq 0 ]; then
     rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/skills/grill-plan-team" 2>/dev/null || true
@@ -594,6 +821,26 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
     done
 
     update_manifest_on_uninstall "$MANIFEST_PATH" "${UNINSTALL_HARNESSES[@]}"
+
+    if [ "$DO_PURGE" -eq 1 ]; then
+      if [ "$IS_GLOBAL" -eq 1 ]; then
+        PURGE_FILE="${XDG_CONFIG_HOME:-$TARGET_DIR/.config}/grill-plan-team/user-memory.md"
+        if [ -f "$PURGE_FILE" ]; then
+          rm -f "$PURGE_FILE"
+          echo "Purged: $PURGE_FILE"
+          rmdir "$(dirname "$PURGE_FILE")" 2>/dev/null || true
+        fi
+      else
+        PURGE_FILE="${TARGET_DIR}/.grill-plan-team/project-memory.md"
+        if [ -f "$PURGE_FILE" ]; then
+          rm -f "$PURGE_FILE"
+          echo "Purged: $PURGE_FILE"
+          rmdir "$(dirname "$PURGE_FILE")" 2>/dev/null || true
+        fi
+      fi
+    else
+      echo "[memory] Preserved user memory files (use --purge to delete)"
+    fi
   fi
 
   echo "Uninstallation complete. Cleaned ${REMOVED_COUNT} file(s)."
@@ -715,6 +962,23 @@ done
 
 # Save installation manifest
 save_installation_manifest "$MANIFEST_PATH"
+
+# Auto-initialize global user memory if it does not exist
+target_home="${TARGET_DIR}"
+if [ "$IS_GLOBAL" -eq 0 ]; then
+  target_home="${HOME}"
+fi
+user_mem_file="${XDG_CONFIG_HOME:-$target_home/.config}/grill-plan-team/user-memory.md"
+if [ ! -f "$user_mem_file" ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[dry-run] Would initialize global user memory: $user_mem_file"
+  else
+    mkdir -p "$(dirname "$user_mem_file")"
+    content="$(get_memory_template "user")"
+    printf "%s\n" "$content" > "$user_mem_file"
+    echo "Initialized user memory: $user_mem_file"
+  fi
+fi
 
 echo ""
 echo "Installation successful!"

@@ -26,6 +26,206 @@ const HARNESS_DISPLAY_NAMES = {
   roo: 'Roo Code / Cline'
 };
 
+const DEFAULT_USER_MEMORY = `# Global User Memory (grill-plan-team)
+
+Personal developer profile and global engineering preferences across all projects.
+
+## Developer Profile & Interaction Style
+- Preferred interaction cadence: direct, concise, technical rationale first.
+- Decision preference: present structured multiple-choice recommendations with trade-offs.
+
+## Preferred Tech Stacks & Tooling
+- Architecture: modular, minimal runtime dependencies, clean interface boundaries.
+- Runtime & language preferences: modern LTS Node.js / TypeScript / native tooling where applicable.
+- Testing preference: native test runners (e.g. node:test), zero unnecessary testing frameworks.
+
+## Architectural Heuristics
+- Single Responsibility & High Cohesion: keep diffs focused on the exact requested requirement.
+- Defensive boundaries: validate inputs at integration seams, keep core logic free of external bloat.
+- Self-contained systems: prefer standalone scripts and zero-dependency utilities.
+
+## Workflow Habits & Overrides
+- Prioritize non-breaking changes and backward compatibility.
+- Ensure thorough automated verification before certifying changes.
+`;
+
+const DEFAULT_PROJECT_MEMORY = `# Local Project Memory (grill-plan-team)
+
+Repository-specific context, conventions, architectural decisions, and learned lessons.
+
+## Project Archetype & Domain Terminology
+- Archetype: Cross-harness AI agent workflow engine and installer CLI.
+- Domain terms:
+  - Harness: Target IDE or coding agent host (Antigravity, Claude Code, Cursor, Windsurf, Roo Code).
+  - 3-Phase Gate: Grill-Me (interview) -> Plan (blueprint) -> Teamwork (execution).
+  - Two-Tier Memory: Global user profile (~/.config/grill-plan-team) + local project memory (.grill-plan-team).
+
+## Established Repository Conventions
+- Dependencies: Zero external runtime dependencies; use native Node.js / POSIX bash APIs.
+- Testing: node:test with strict parity testing between install.sh and bin/install.js.
+- Governance: Gated phase progression; changes committed cleanly to git.
+
+## Architectural Decision History
+- [Initial Bootstrap]: Established unified 3-phase gated pipeline with cross-harness parity.
+
+## Past Pitfalls & Reviewer Lessons
+- Parity requirement: Any CLI or template change must be mirrored across both bin/install.js and install.sh.
+- Path normalization: Always resolve paths and trim whitespace when handling user inputs.
+`;
+
+function getHomeDir() {
+  return process.env.HOME || os.homedir();
+}
+
+function getUserMemoryPath(homeDir = getHomeDir()) {
+  const configHome = process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+  return path.join(configHome, 'grill-plan-team', 'user-memory.md');
+}
+
+function getProjectMemoryPath(baseDir = process.cwd()) {
+  return path.join(baseDir, '.grill-plan-team', 'project-memory.md');
+}
+
+function getUserMemoryTemplate() {
+  try {
+    return getTemplateContent('memory/user-memory.md');
+  } catch {
+    return DEFAULT_USER_MEMORY;
+  }
+}
+
+function getProjectMemoryTemplate() {
+  try {
+    return getTemplateContent('memory/project-memory.md');
+  } catch {
+    return DEFAULT_PROJECT_MEMORY;
+  }
+}
+
+function ensureUserMemory(homeDir, dryRun) {
+  const memPath = getUserMemoryPath(homeDir);
+  if (!fs.existsSync(memPath)) {
+    if (dryRun) {
+      console.log(`[dry-run] Would initialize global user memory: ${memPath}`);
+    } else {
+      writeFileSyncSafe(memPath, getUserMemoryTemplate(), false);
+      console.log(`Initialized user memory: ${memPath}`);
+    }
+    return true;
+  }
+  return false;
+}
+
+function printMemoryHelp() {
+  console.log(`
+Grill-Plan-Team Two-Tier Memory CLI
+
+Usage:
+  npx grill-plan-team memory init [--project | --user]
+  npx grill-plan-team memory show [--project | --user]
+  npx grill-plan-team memory path [--project | --user]
+
+Options:
+  --user, -u          Target global user memory (~/.config/grill-plan-team/user-memory.md) (default)
+  --project, -p       Target local project memory (.grill-plan-team/project-memory.md)
+  --local, -l <path>  Target specific project directory for --project
+  --force, -f         Force overwrite of existing memory file on init
+  --help, -h          Show this help message
+`);
+}
+
+function handleMemoryCommand(args) {
+  const subcmd = args[0];
+  if (!subcmd || subcmd === '--help' || subcmd === '-h') {
+    printMemoryHelp();
+    return;
+  }
+
+  let target = 'user';
+  let localPath = null;
+  let force = false;
+
+  let i = 1;
+  while (i < args.length) {
+    const a = args[i];
+    if (a === '--project' || a === '-p') {
+      target = 'project';
+    } else if (a === '--user' || a === '-u') {
+      target = 'user';
+    } else if (a === '--force' || a === '-f') {
+      force = true;
+    } else if (a === '--local' || a === '-l') {
+      if (args[i + 1] && !args[i + 1].startsWith('-')) {
+        localPath = path.resolve(args[i + 1]);
+        i++;
+      } else {
+        localPath = process.cwd();
+      }
+    } else if (a.startsWith('--local=') || a.startsWith('-l=')) {
+      const prefix = a.startsWith('--local=') ? '--local=' : '-l=';
+      localPath = path.resolve(a.slice(prefix.length).trim());
+    } else if (a === '--help' || a === '-h') {
+      printMemoryHelp();
+      return;
+    } else {
+      console.error(`Error: Unknown option for memory ${subcmd}: ${a}`);
+      printMemoryHelp();
+      process.exit(1);
+    }
+    i++;
+  }
+
+  const homeDir = getHomeDir();
+  const projDir = localPath || process.cwd();
+
+  switch (subcmd) {
+    case 'path': {
+      if (target === 'project') {
+        console.log(getProjectMemoryPath(projDir));
+      } else {
+        console.log(getUserMemoryPath(homeDir));
+      }
+      break;
+    }
+
+    case 'init': {
+      if (target === 'project') {
+        const memPath = getProjectMemoryPath(projDir);
+        if (fs.existsSync(memPath) && !force) {
+          console.log(`Project memory already exists at: ${memPath}`);
+        } else {
+          writeFileSyncSafe(memPath, getProjectMemoryTemplate(), false);
+          console.log(`Initialized project memory: ${memPath}`);
+        }
+      } else {
+        const memPath = getUserMemoryPath(homeDir);
+        if (fs.existsSync(memPath) && !force) {
+          console.log(`User memory already exists at: ${memPath}`);
+        } else {
+          writeFileSyncSafe(memPath, getUserMemoryTemplate(), false);
+          console.log(`Initialized user memory: ${memPath}`);
+        }
+      }
+      break;
+    }
+
+    case 'show': {
+      const memPath = target === 'project' ? getProjectMemoryPath(projDir) : getUserMemoryPath(homeDir);
+      if (!fs.existsSync(memPath)) {
+        console.error(`Error: ${target === 'project' ? 'Project' : 'User'} memory file not found at ${memPath}.`);
+        process.exit(1);
+      }
+      process.stdout.write(fs.readFileSync(memPath, 'utf8'));
+      break;
+    }
+
+    default:
+      console.error(`Error: Unknown memory subcommand: ${subcmd}`);
+      printMemoryHelp();
+      process.exit(1);
+  }
+}
+
 function parseArgs(args) {
   const options = {
     isGlobal: true,
@@ -33,6 +233,7 @@ function parseArgs(args) {
     all: false,
     harnesses: [],
     uninstall: false,
+    purge: false,
     dryRun: false,
     help: false,
     interactive: false
@@ -63,6 +264,8 @@ function parseArgs(args) {
       options.all = true;
     } else if (arg === '--uninstall' || arg === '-u') {
       options.uninstall = true;
+    } else if (arg === '--purge') {
+      options.purge = true;
     } else if (arg === '--dry-run' || arg === '-d') {
       options.dryRun = true;
     } else if (arg === '--interactive') {
@@ -118,6 +321,7 @@ Grill-Plan-Team Universal Installer & Adapter Manager
 
 Usage:
   npx grill-plan-team [options]
+  npx grill-plan-team memory <subcommand> [options]
   node bin/install.js [options]
   ./install.sh [options]
 
@@ -128,9 +332,15 @@ Options:
   --harness <name>      Comma-separated list of target harnesses:
                         antigravity, claude, cursor, windsurf, roo
   --uninstall, -u       Cleanly remove installed grill-plan-team configurations
+  --purge               Purge persistent memory files when uninstalling
   --dry-run, -d         Preview changes without writing any files
   --interactive         Prompt for target harnesses interactively
   --help, -h            Show this help documentation
+
+Memory Commands:
+  npx grill-plan-team memory init [--project | --user]
+  npx grill-plan-team memory show [--project | --user]
+  npx grill-plan-team memory path [--project | --user]
 
 Supported Harnesses:
   * antigravity   Antigravity / Gemini CLI (~/.gemini/config/plugins/grill-plan-team)
@@ -419,9 +629,13 @@ async function promptHarnesses(detected) {
   });
 }
 
-async function run() {
-  const args = process.argv.slice(2);
-  const options = parseArgs(args);
+async function run(cliArgs = process.argv.slice(2)) {
+  if (cliArgs.length > 0 && cliArgs[0] === 'memory') {
+    handleMemoryCommand(cliArgs.slice(1));
+    return;
+  }
+
+  const options = parseArgs(cliArgs);
 
   if (options.help) {
     printHelp();
@@ -540,6 +754,41 @@ async function run() {
       } else if (fs.existsSync(manifestPath)) {
         fs.unlinkSync(manifestPath);
       }
+
+      // Memory preservation / purge handling
+      if (options.purge) {
+        if (options.isGlobal) {
+          const userMem = getUserMemoryPath(baseDir);
+          if (fs.existsSync(userMem)) {
+            try {
+              fs.unlinkSync(userMem);
+              console.log(`Purged user memory: ${userMem}`);
+              const userDir = path.dirname(userMem);
+              if (fs.existsSync(userDir) && fs.readdirSync(userDir).length === 0) {
+                fs.rmdirSync(userDir);
+              }
+            } catch (err) {
+              console.error(`Failed to remove ${userMem}: ${err.message}`);
+            }
+          }
+        } else {
+          const projMem = getProjectMemoryPath(baseDir);
+          if (fs.existsSync(projMem)) {
+            try {
+              fs.unlinkSync(projMem);
+              console.log(`Purged project memory: ${projMem}`);
+              const projDir = path.dirname(projMem);
+              if (fs.existsSync(projDir) && fs.readdirSync(projDir).length === 0) {
+                fs.rmdirSync(projDir);
+              }
+            } catch (err) {
+              console.error(`Failed to remove ${projMem}: ${err.message}`);
+            }
+          }
+        }
+      } else {
+        console.log('[memory] Preserved user memory files (use --purge to delete)');
+      }
     }
 
     console.log(`\nUninstallation complete. Cleaned ${removedCount} file(s).`);
@@ -593,6 +842,10 @@ async function run() {
     }
   }
 
+  // Auto-initialize global user memory if it does not exist
+  const homeDir = options.isGlobal ? baseDir : getHomeDir();
+  ensureUserMemory(homeDir, options.dryRun);
+
   manifest.installedFiles = Array.from(installedFiles);
   manifest.harnesses = Array.from(new Set([...(manifest.harnesses || []), ...targetHarnesses]));
   manifest.updatedAt = new Date().toISOString();
@@ -615,6 +868,15 @@ if (require.main === module) {
 module.exports = {
   HARNESSES,
   HARNESS_DISPLAY_NAMES,
+  DEFAULT_USER_MEMORY,
+  DEFAULT_PROJECT_MEMORY,
+  getHomeDir,
+  getUserMemoryPath,
+  getProjectMemoryPath,
+  getUserMemoryTemplate,
+  getProjectMemoryTemplate,
+  ensureUserMemory,
+  handleMemoryCommand,
   parseArgs,
   detectInstalledHarnesses,
   getHarnessFileMappings,

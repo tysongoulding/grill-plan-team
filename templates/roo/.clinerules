@@ -1,25 +1,32 @@
 # Cline / Roo Code Rules: Grill-Plan-Team Workflow
 
-Operate strictly under the 3-phase gated development workflow:
+Operate strictly under the 3-phase gated development workflow with two-tier recursive memory:
 
 ```mermaid
 flowchart LR
-    A["Phase 1: Grill-Me<br/>(Interview & Alignment)"] -->|"Aligned"| B["Phase 2: Plan<br/>(Blueprint Artifact)"]
+    M["Step 0: Memory Recall<br/>(Two-Tier Context)"] --> A["Phase 1: Grill-Me<br/>(Adaptive Interview)"]
+    A -->|"Aligned"| B["Phase 2: Plan<br/>(Blueprint Artifact)"]
     B -->|"Approved"| C["Phase 3: Teamwork<br/>(Execution & Testing)"]
+    C -->|"Tests Passed"| D["Phase 4: Distill<br/>(Reflection Loop)"]
 ```
+
+## Step 0: Memory Recall (Two-Tier Context)
+- Ingest global user memory from `~/.config/grill-plan-team/user-memory.md` (preferences, stack habits).
+- Ingest local project memory from `.grill-plan-team/project-memory.md` (conventions, ADRs, known pitfalls).
 
 ## Phase 1: Interactive Alignment (Grill-Me)
 - Search codebase patterns and configurations before asking questions.
+- Skip trivial questions already answered in memory.
 - Ask questions one at a time using structured multiple choice:
   - `[A] Option 1`
-  - `[B] (Recommended) Option 2 - [concise engineering rationale]`
+  - `[B] (Recommended) Option 2 - [concise engineering rationale] (Aligned with user/project memory)`
   - `[C] Option 3`
 - Resolve decisions systematically: Data models $\to$ API contract $\to$ State/Storage $\to$ UI/CLI surface $\to$ Edge cases.
 - **Phase Gate**: Only proceed when all scope boundaries and architectural choices are agreed upon.
 
 ## Phase 2: Technical Design & Verification (Plan)
 - Inspect codebase thoroughly to ensure 100% feasibility.
-- Write an implementation plan artifact to `.roo/plans/<feature>_plan.md` or the active task artifacts folder.
+- Write an implementation plan artifact to `.roo/plans/<feature>_plan.md` or the active task artifacts folder grounded in project memory.
 - Detail:
   - Goal Description (1–2 sentences).
   - User Review Required (critical breaking changes or decisions).
@@ -32,3 +39,10 @@ flowchart LR
 - Run actual tests and verification commands after changes.
 - Never weaken, bypass, or delete tests to achieve a passing state.
 - Provide a summary distinguishing verified from unverified aspects.
+
+## Phase 4: Reflection & Distillation Loop
+- After verification passes, distill learned insights:
+  1. Record developer preference overrides in `~/.config/grill-plan-team/user-memory.md`.
+  2. Append core architectural choices to `## Architectural Decision History` in `.grill-plan-team/project-memory.md`.
+  3. Record edge-case pitfalls and lessons under `## Past Pitfalls & Reviewer Lessons` in `.grill-plan-team/project-memory.md`.
+- Keep notes concise and deduplicated.

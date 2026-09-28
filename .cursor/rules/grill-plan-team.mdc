@@ -1,5 +1,5 @@
 ---
-description: Grill-Plan-Team 3-phase gated development workflow (Grill-Me interview -> Plan blueprint artifact -> Teamwork execution)
+description: Grill-Plan-Team recursive workflow with two-tier memory (Memory Recall -> Grill-Me -> Plan blueprint -> Teamwork execution -> Distillation loop)
 globs: *
 alwaysApply: true
 ---
@@ -10,22 +10,29 @@ Apply this workflow whenever handling features, architecture designs, bug fixes,
 
 ```mermaid
 flowchart LR
-    A["Phase 1: Grill-Me<br/>(Interactive Interview)"] -->|"Alignment Reached"| B["Phase 2: Plan<br/>(Implementation Blueprint)"]
+    M["Step 0: Memory Recall<br/>(Two-Tier Context)"] --> A["Phase 1: Grill-Me<br/>(Adaptive Interview)"]
+    A -->|"Alignment Reached"| B["Phase 2: Plan<br/>(Implementation Blueprint)"]
     B -->|"Explicit Approval"| C["Phase 3: Teamwork<br/>(Execution & Verification)"]
+    C -->|"Tests Passed"| D["Phase 4: Distill<br/>(Reflection Loop)"]
 ```
+
+## Step 0: Memory Recall (Two-Tier Context)
+- Ingest global user memory from `~/.config/grill-plan-team/user-memory.md` (developer style, preferences).
+- Ingest local project memory from `.grill-plan-team/project-memory.md` (conventions, ADRs, past pitfalls).
 
 ## Phase 1: Interactive Alignment (Grill-Me)
 - **Explore Codebase First**: Search files, configs, tests, and dependencies before asking questions.
+- **Adaptive Memory Recall**: Skip trivial questions already resolved by memory.
 - **One Question at a Time**: Never overwhelm the user. Present atomic multiple-choice decisions:
   - `A) Option 1`
-  - `B) (Recommended) Option 2 - [concise rationale]`
+  - `B) (Recommended) Option 2 - [concise rationale] (Aligned with user/project memory)`
   - `C) Option 3`
 - **Walk the Decision Tree**: Systematically resolve Data models $\to$ API contracts $\to$ Storage/State $\to$ UI/CLI surface $\to$ Edge cases.
 - **Gate**: Phase 1 concludes only when all architectural decisions and scope boundaries are agreed.
 
 ## Phase 2: Technical Design & Verification (Plan)
 - Inspect codebase thoroughly to ensure 100% technical feasibility.
-- Write an implementation plan artifact to `.cursor/plans/<feature>_plan.md` with:
+- Write an implementation plan artifact to `.cursor/plans/<feature>_plan.md` grounded in project memory with:
   1. Goal Description (1–2 sentences).
   2. User Review Required (critical breaking changes or decisions).
   3. Proposed Changes (files to create, modify, delete with diffs).
@@ -37,3 +44,10 @@ flowchart LR
 - Verify work using real tests and typechecks.
 - Do not weaken tests to pass.
 - Provide a summary of changes, test verification results, and any remaining edge cases.
+
+## Phase 4: Reflection & Distillation Loop
+- Post-execution reflection runs automatically upon passing verification:
+  1. Record new user overrides in `~/.config/grill-plan-team/user-memory.md`.
+  2. Record key architectural decisions under `## Architectural Decision History` in `.grill-plan-team/project-memory.md`.
+  3. Record edge-case pitfalls and lessons under `## Past Pitfalls & Reviewer Lessons` in `.grill-plan-team/project-memory.md`.
+- Maintain concise, deduplicated entries.
