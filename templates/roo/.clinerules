@@ -48,3 +48,9 @@ flowchart LR
   2. Append core architectural choices to `## Architectural Decision History` in `REQUIREMENTS.md`.
   3. Record edge-case pitfalls and lessons under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 - Keep notes concise and deduplicated.
+
+## Uninstallation & Removal Protocol
+- If the user asks to `uninstall /grill-plan-team`, `remove /grill-plan-teams`, or `uninstall https://github.com/tysongoulding/grill-plan-team`:
+  - Run `npx grill-plan-team uninstall` (add `--purge` if memory deletion is requested).
+  - Or remove `.roomodes` and `.clinerules`.
+  - Confirm completion to the user.

@@ -610,7 +610,7 @@ function parseArgs(args) {
       options.localPath = val ? path.resolve(val) : process.cwd();
     } else if (arg === '--all' || arg === '-a') {
       options.all = true;
-    } else if (arg === '--uninstall' || arg === '-u') {
+    } else if (arg === '--uninstall' || arg === '-u' || arg === 'uninstall' || arg === 'remove') {
       options.uninstall = true;
     } else if (arg === '--purge') {
       options.purge = true;
@@ -669,6 +669,8 @@ Grill-Plan-Team Universal Installer & Adapter Manager
 
 Usage:
   npx grill-plan-team [options]
+  npx grill-plan-team uninstall [--purge]
+  npx grill-plan-team remove [--purge]
   npx grill-plan-team memory <subcommand> [options]
   node bin/install.js [options]
   ./install.sh [options]

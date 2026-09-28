@@ -60,6 +60,7 @@ describe('Repository Manifest & Schema Integrity', () => {
     assert.ok(fs.existsSync(rootAgentsPath), 'root AGENTS.md exists');
     const content = fs.readFileSync(rootAgentsPath, 'utf8');
     assert.ok(content.includes('Agent Installation Guide'), 'includes installation guide');
+    assert.ok(content.includes('Agent Uninstallation Guide'), 'includes uninstallation guide');
     assert.ok(content.includes('node bin/install.js'), 'includes install commands');
     assert.ok(content.includes('Do NOT run `npm test` as an install step'), 'includes guardrails');
     assert.ok(content.includes('Phase 1: Interactive Alignment (Grill-Me)'), 'includes Phase 1');
@@ -225,6 +226,20 @@ describe('Shell Installer (install.sh)', () => {
     assert.strictEqual(remaining.length, 0, 'Clean directory left empty after complete uninstall');
   });
 
+  test('install.sh supports uninstall and remove subcommands', () => {
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')));
+
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, 'uninstall'], { encoding: 'utf8' });
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.roomodes')));
+
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')));
+
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, 'remove'], { encoding: 'utf8' });
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.roomodes')));
+  });
+
   test('install.sh rejects unknown options with exit code 1', () => {
     assert.throws(() => {
       execFileSync('bash', [INSTALL_SH, '--locall', tmpDir], { encoding: 'utf8', stdio: 'pipe' });
@@ -356,6 +371,20 @@ describe('Node Installer CLI (bin/install.js)', () => {
     assert.ok(!fs.existsSync(path.join(tmpDir, '.cursorrules')), '.cursorrules removed');
     assert.ok(fs.existsSync(userSecret), 'Unrelated user config preserved');
     assert.strictEqual(fs.readFileSync(userSecret, 'utf8'), '{"api_key": "12345"}');
+  });
+
+  test('bin/install.js supports uninstall and remove subcommands', () => {
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')));
+
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, 'uninstall'], { encoding: 'utf8' });
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.roomodes')));
+
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--all'], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.roomodes')));
+
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, 'remove'], { encoding: 'utf8' });
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.roomodes')));
   });
 
   test('bin/install.js --local runs with auto-detection without hanging', () => {

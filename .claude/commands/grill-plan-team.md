@@ -46,3 +46,18 @@ When the user runs `/grill-plan-team $ARGUMENTS`:
    - Append locked architectural decisions to `REQUIREMENTS.md` (`## Architectural Decision History`).
    - Append debugging/reviewer lessons to `REQUIREMENTS.md` (`## Past Pitfalls & Reviewer Lessons`).
    - Enforce deduplication and concise bullet points.
+
+---
+
+## Uninstallation & Removal Protocol
+
+If `$ARGUMENTS` contains `uninstall` or `remove`, or if the user prompts `uninstall /grill-plan-team`, `remove /grill-plan-teams`, or `uninstall https://github.com/tysongoulding/grill-plan-team`:
+1. Execute uninstallation:
+   ```bash
+   npx grill-plan-team uninstall
+   ```
+   Add `--purge` to delete persistent memory/profile files if requested.
+2. Alternatively, remove the installed command and skill directly:
+   - `rm -f ~/.claude/commands/grill-plan-team.md`
+   - `rm -rf ~/.claude/skills/grill-plan-team`
+3. Confirm uninstallation to the user.

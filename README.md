@@ -88,19 +88,58 @@ npx grill-plan-team assess [--user | --project]
 
 ---
 
-## Quick-Start Installation
+## 5. Simple Installation & Uninstallation
 
-Install globally or into a local repository:
+### Simple Installation
 
+#### In Agent Chat (Antigravity, Claude Code, Cursor, Windsurf, Roo)
+Simply paste this prompt into your agent's chat:
+```text
+install https://github.com/tysongoulding/grill-plan-team
+```
+The agent reads [`AGENTS.md`](AGENTS.md) and executes the zero-dependency installer for your active environment.
+
+#### From Terminal
 ```bash
-# One-line installer via curl
-curl -fsSL https://raw.githubusercontent.com/tysongoulding/grill-plan-team/main/install.sh | bash
-
-# Or using npx
+# One-line universal installer
 npx grill-plan-team
+
+# Or via curl:
+curl -fsSL https://raw.githubusercontent.com/tysongoulding/grill-plan-team/main/install.sh | bash
 
 # Local repository install
 npx grill-plan-team --local .
+```
+
+---
+
+### Simple Uninstallation
+
+#### In Agent Chat
+Simply prompt the agent in chat:
+```text
+uninstall /grill-plan-team
+# or:
+remove /grill-plan-team
+# or:
+uninstall https://github.com/tysongoulding/grill-plan-team
+# or:
+remove https://github.com/tysongoulding/grill-plan-team
+```
+*(Also recognizes plural `/grill-plan-teams`)*.
+
+#### From Terminal
+```bash
+# Clean uninstallation across all detected harnesses:
+npx grill-plan-team uninstall
+# or:
+npx grill-plan-team remove
+
+# To also purge persistent memory and profile files:
+npx grill-plan-team uninstall --purge
+
+# Shell script equivalent:
+./install.sh uninstall [--purge]
 ```
 
 ### Memory CLI

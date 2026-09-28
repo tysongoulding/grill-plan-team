@@ -543,6 +543,8 @@ Grill-Plan-Team Universal Shell Installer
 
 Usage:
   ./install.sh [options]
+  ./install.sh uninstall [--purge]
+  ./install.sh remove [--purge]
   ./install.sh memory <subcommand> [options]
   curl -fsSL https://raw.githubusercontent.com/tysongoulding/grill-plan-team/main/install.sh | bash -s -- [options]
 
@@ -605,7 +607,7 @@ while [ $# -gt 0 ]; do
       ALL_HARNESSES=1
       shift
       ;;
-    --uninstall|-u)
+    --uninstall|-u|uninstall|remove)
       DO_UNINSTALL=1
       shift
       ;;

@@ -57,3 +57,23 @@ flowchart LR
 - **Rule 2 — Architectural Records**: Append new decisions to `REQUIREMENTS.md` under `## Architectural Decision History`.
 - **Rule 3 — Preventative Lessons**: Record test failures, edge case fixes, and reviewer feedback under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 - **Rule 4 — Anti-Bloat**: Enforce concise, deduplicated bullet points.
+
+---
+
+## Uninstallation & Removal Protocol
+
+If the user asks to `remove` or `uninstall` this workflow/skill (e.g. `uninstall /grill-plan-team`, `remove /grill-plan-teams`, or `uninstall https://github.com/tysongoulding/grill-plan-team`):
+1. Execute uninstallation:
+   ```bash
+   node bin/install.js --uninstall
+   # or with npx:
+   npx grill-plan-team uninstall
+   ```
+   Add `--purge` to delete persistent memory/profile files if requested.
+2. Alternatively, remove the active plugin/rules directly:
+   - Antigravity: `rm -rf ~/.gemini/config/plugins/grill-plan-team`
+   - Claude Code: `rm -rf ~/.claude/skills/grill-plan-team ~/.claude/commands/grill-plan-team.md`
+   - Cursor: `rm -rf ~/.cursor/rules/grill-plan-team.mdc ~/.cursorrules ~/.cursor/skills/grill-plan-team`
+   - Windsurf: `rm -f .windsurfrules`
+   - Roo Code: `rm -f .roomodes .clinerules`
+3. Confirm uninstallation to the user once completed.

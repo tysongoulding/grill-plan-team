@@ -54,7 +54,42 @@ node bin/install.js assess --user
 
 ---
 
-## 2. Universal Workflow Governance: Grill-Plan-Team
+## 2. Agent Uninstallation Guide (When User Requests "Uninstall" or "Remove")
+
+If the user prompts in chat:
+> *"uninstall https://github.com/tysongoulding/grill-plan-team"*  
+> *"remove https://github.com/tysongoulding/grill-plan-team"*  
+> *"uninstall /grill-plan-team"* or *"uninstall /grill-plan-teams"*  
+> *"remove /grill-plan-team"* or *"remove /grill-plan-teams"*  
+
+Follow this automated uninstallation protocol:
+
+### Agent Instructions
+1. **Execute the Universal Uninstaller**:
+```bash
+# Clean uninstall for current harness:
+node bin/install.js --uninstall
+
+# Or across all harnesses:
+node bin/install.js --all --uninstall
+
+# If the user explicitly asks to purge memory/assessment files:
+node bin/install.js --all --uninstall --purge
+```
+
+2. **Or Remove Harness Files Directly** (if repository is not locally cloned):
+- **Antigravity / Gemini CLI**: Remove `~/.gemini/config/plugins/grill-plan-team`
+- **Claude Code**: Remove `~/.claude/skills/grill-plan-team` and `~/.claude/commands/grill-plan-team.md`
+- **Cursor**: Remove `~/.cursor/rules/grill-plan-team.mdc`, `~/.cursorrules`, and `~/.cursor/skills/grill-plan-team`
+- **Windsurf**: Remove `.windsurfrules`
+- **Roo Code / Cline**: Remove `.roomodes` and `.clinerules`
+- **Memory files (only if purge requested)**: Remove `~/.config/grill-plan-team`
+
+3. **Confirm completion** to the user with a concise summary of cleaned paths.
+
+---
+
+## 3. Universal Workflow Governance: Grill-Plan-Team
 
 When operating within this repository or when executing tasks under the `grill-plan-team` workflow, all agents must adhere to the 4 gated phases: **Grill-Me $\to$ Plan $\to$ Teamwork $\to$ Distill**.
 

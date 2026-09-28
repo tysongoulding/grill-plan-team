@@ -45,3 +45,9 @@ flowchart LR
 2. Append locked architectural decisions to `## Architectural Decision History` in `REQUIREMENTS.md`.
 3. Record bug fixes and reviewer edge-case lessons under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 4. Enforce concise, deduplicated bullets.
+
+## Uninstallation & Removal Protocol
+- If the user asks to `uninstall /grill-plan-team`, `remove /grill-plan-teams`, or `uninstall https://github.com/tysongoulding/grill-plan-team`:
+  - Run `npx grill-plan-team uninstall` (add `--purge` if memory deletion is requested).
+  - Or remove `.windsurfrules`.
+  - Confirm completion to the user.

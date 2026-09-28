@@ -37,3 +37,9 @@ Always follow the **Step 0 Recall $\to$ Grill-Me $\to$ Plan $\to$ Teamwork $\to$
 - Append newly locked architectural choices to `REQUIREMENTS.md` under `## Architectural Decision History`.
 - Record testing or reviewer bug prevention heuristics under `## Past Pitfalls & Reviewer Lessons` in `REQUIREMENTS.md`.
 - Enforce deduplication and concise bullet points.
+
+## Uninstallation & Removal Protocol
+- If the user asks to `uninstall /grill-plan-team`, `remove /grill-plan-teams`, or `uninstall https://github.com/tysongoulding/grill-plan-team`:
+  - Run `npx grill-plan-team uninstall` (add `--purge` if memory deletion is requested).
+  - Or remove `.cursorrules`, `.cursor/rules/grill-plan-team.mdc`, and `~/.cursor/skills/grill-plan-team`.
+  - Confirm completion to the user.

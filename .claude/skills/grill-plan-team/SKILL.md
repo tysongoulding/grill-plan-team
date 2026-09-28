@@ -199,3 +199,23 @@ Automatically execute this post-execution learning loop immediately after Phase 
    - Update `.grill-plan-team/REQUIREMENTS.md` for project-level decisions, or `~/.config/grill-plan-team/` for global developer overrides.
 4. **Bloat Prevention & Deduplication**:
    - Keep bullet points dense, actionable, and non-redundant. Merge or refine related points instead of appending duplicates.
+
+---
+
+## Uninstallation & Removal Protocol
+
+If the user asks to `remove` or `uninstall` this workflow/skill (e.g. `uninstall /grill-plan-team`, `remove /grill-plan-teams`, or `uninstall https://github.com/tysongoulding/grill-plan-team`):
+1. Execute uninstallation:
+   ```bash
+   node <repo-root>/bin/install.js --uninstall
+   # or with npx:
+   npx grill-plan-team uninstall
+   ```
+   Add `--purge` to delete persistent memory/profile files if requested.
+2. Alternatively, remove the installed skill directory:
+   - **Antigravity**: Delete `~/.gemini/config/plugins/grill-plan-team`
+   - **Claude Code**: Delete `~/.claude/skills/grill-plan-team` and `~/.claude/commands/grill-plan-team.md`
+   - **Cursor**: Delete `~/.cursor/rules/grill-plan-team.mdc`, `~/.cursorrules`, and `~/.cursor/skills/grill-plan-team`
+   - **Windsurf**: Delete `.windsurfrules`
+   - **Roo Code**: Delete `.roomodes` and `.clinerules`
+3. Provide a clear confirmation to the user once removed.
