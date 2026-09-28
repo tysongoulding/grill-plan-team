@@ -451,7 +451,7 @@ if [ "${1:-}" = "memory" ]; then
         fi
 
         for item in "${files_to_init[@]}"; do
-          target_file="${item%%:*}"
+          target_file="${item%:*}"
           kind="${item##*:}"
           if [ -d "$target_file" ]; then
             echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
@@ -489,7 +489,7 @@ if [ "${1:-}" = "memory" ]; then
         fi
 
         for item in "${files_to_init[@]}"; do
-          target_file="${item%%:*}"
+          target_file="${item%:*}"
           kind="${item##*:}"
           if [ -d "$target_file" ]; then
             echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2

@@ -55,6 +55,19 @@ describe('Repository Manifest & Schema Integrity', () => {
     assert.ok(rulesContent.includes('Phase 3: Teamwork Execution & Verification'));
   });
 
+  test('Root AGENTS.md exists and contains agent installation and workflow governance', () => {
+    const rootAgentsPath = path.join(REPO_ROOT, 'AGENTS.md');
+    assert.ok(fs.existsSync(rootAgentsPath), 'root AGENTS.md exists');
+    const content = fs.readFileSync(rootAgentsPath, 'utf8');
+    assert.ok(content.includes('Agent Installation Guide'), 'includes installation guide');
+    assert.ok(content.includes('node bin/install.js'), 'includes install commands');
+    assert.ok(content.includes('Do NOT run `npm test` as an install step'), 'includes guardrails');
+    assert.ok(content.includes('Phase 1: Interactive Alignment (Grill-Me)'), 'includes Phase 1');
+    assert.ok(content.includes('Phase 2: Technical Design & Verification (Plan)'), 'includes Phase 2');
+    assert.ok(content.includes('Phase 3: Teamwork Execution & Verification'), 'includes Phase 3');
+    assert.ok(content.includes('Phase 4: Reflection & Distillation Loop'), 'includes Phase 4');
+  });
+
   test('Claude Code adapter files exist and are valid', () => {
     const skillPath = path.join(REPO_ROOT, '.claude', 'skills', 'grill-plan-team', 'SKILL.md');
     const cmdPath = path.join(REPO_ROOT, '.claude', 'commands', 'grill-plan-team.md');
@@ -394,7 +407,7 @@ describe('Node Installer CLI (bin/install.js)', () => {
       // Run global install with HOME overridden
       execFileSync('node', [BIN_INSTALL_JS, '--all'], {
         encoding: 'utf8',
-        env: { ...process.env, HOME: fakeHome, XDG_CONFIG_HOME: path.join(fakeHome, '.config') }
+        env: { ...process.env, HOME: fakeHome, USERPROFILE: fakeHome, XDG_CONFIG_HOME: path.join(fakeHome, '.config') }
       });
 
       // Verify plugin installed
@@ -410,7 +423,7 @@ describe('Node Installer CLI (bin/install.js)', () => {
       // Run global uninstall with HOME overridden
       execFileSync('node', [BIN_INSTALL_JS, '--uninstall'], {
         encoding: 'utf8',
-        env: { ...process.env, HOME: fakeHome, XDG_CONFIG_HOME: path.join(fakeHome, '.config') }
+        env: { ...process.env, HOME: fakeHome, USERPROFILE: fakeHome, XDG_CONFIG_HOME: path.join(fakeHome, '.config') }
       });
 
       // Verify plugin files removed
@@ -555,6 +568,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     return {
       ...process.env,
       HOME: homePath,
+      USERPROFILE: homePath,
       XDG_CONFIG_HOME: path.join(homePath, '.config')
     };
   }

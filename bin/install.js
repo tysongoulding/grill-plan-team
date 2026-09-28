@@ -136,7 +136,7 @@ Technical guardrails, VCS workflows, language and library preferences, architect
 `;
 
 function getHomeDir() {
-  return process.env.HOME || os.homedir();
+  return process.env.HOME || process.env.USERPROFILE || os.homedir();
 }
 
 function getUserConfigDir(homeDir = getHomeDir()) {
