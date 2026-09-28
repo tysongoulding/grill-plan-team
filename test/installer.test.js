@@ -211,6 +211,49 @@ describe('Shell Installer (install.sh)', () => {
     const remaining = fs.readdirSync(tmpDir);
     assert.strictEqual(remaining.length, 0, 'Clean directory left empty after complete uninstall');
   });
+
+  test('install.sh rejects unknown options with exit code 1', () => {
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, '--locall', tmpDir], { encoding: 'utf8', stdio: 'pipe' });
+    }, /Unknown option/);
+  });
+
+  test('install.sh rejects invalid harness names with exit code 1 on install and uninstall', () => {
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'nonexistent'], { encoding: 'utf8', stdio: 'pipe' });
+    }, /No valid harnesses specified/);
+
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'nonexistent', '--uninstall'], { encoding: 'utf8', stdio: 'pipe' });
+    }, /No valid harnesses specified/);
+  });
+
+  test('install.sh incremental install merges manifest files and harnesses', () => {
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'claude'], { encoding: 'utf8' });
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
+    assert.ok(manifest.harnesses.includes('cursor'), 'Manifest contains cursor');
+    assert.ok(manifest.harnesses.includes('claude'), 'Manifest contains claude');
+    assert.strictEqual(manifest.harnesses.length, 2);
+    assert.strictEqual(manifest.installedFiles.length, 4);
+  });
+
+  test('install.sh selective uninstall updates manifest and removes manifest when last harness is uninstalled', () => {
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'claude'], { encoding: 'utf8' });
+
+    // Remove claude
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'claude', '--uninstall'], { encoding: 'utf8' });
+    let manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
+    assert.deepStrictEqual(manifest.harnesses, ['cursor']);
+    assert.strictEqual(manifest.installedFiles.length, 2);
+
+    // Remove cursor
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', 'cursor', '--uninstall'], { encoding: 'utf8' });
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest removed');
+    assert.strictEqual(fs.readdirSync(tmpDir).length, 0, 'Target directory clean after complete selective uninstall');
+  });
 });
 
 describe('Node Installer CLI (bin/install.js)', () => {
@@ -350,4 +393,95 @@ describe('Node Installer CLI (bin/install.js)', () => {
       fs.rmSync(fakeHome, { recursive: true, force: true });
     }
   });
+
+  test('bin/install.js rejects unknown options with exit code 1', () => {
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, '--locall', tmpDir], { encoding: 'utf8', stdio: 'pipe' });
+    }, /Unknown option/);
+  });
+
+  test('bin/install.js rejects invalid harness names with exit code 1 on install and uninstall', () => {
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'nonexistent'], { encoding: 'utf8', stdio: 'pipe' });
+    }, /No valid harnesses specified/);
+
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'nonexistent', '--uninstall'], { encoding: 'utf8', stdio: 'pipe' });
+    }, /No valid harnesses specified/);
+  });
+
+  test('bin/install.js incremental install merges manifest files and harnesses', () => {
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'claude'], { encoding: 'utf8' });
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, '.grill-plan-team-manifest.json'), 'utf8'));
+    assert.ok(manifest.harnesses.includes('cursor'), 'Manifest contains cursor');
+    assert.ok(manifest.harnesses.includes('claude'), 'Manifest contains claude');
+    assert.strictEqual(manifest.harnesses.length, 2);
+    assert.strictEqual(manifest.installedFiles.length, 4);
+  });
+
+  test('bin/install.js selective uninstall removes manifest when last harness is uninstalled', () => {
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'cursor'], { encoding: 'utf8' });
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', 'cursor', '--uninstall'], { encoding: 'utf8' });
+
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest removed');
+    assert.strictEqual(fs.readdirSync(tmpDir).length, 0, 'Target directory clean after complete selective uninstall');
+  });
 });
+
+describe('Cross-Harness Parity & Byte Integrity', () => {
+  let shDir;
+  let nodeDir;
+
+  beforeEach(() => {
+    shDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-parity-sh-'));
+    nodeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-parity-node-'));
+  });
+
+  afterEach(() => {
+    if (shDir && fs.existsSync(shDir)) fs.rmSync(shDir, { recursive: true, force: true });
+    if (nodeDir && fs.existsSync(nodeDir)) fs.rmSync(nodeDir, { recursive: true, force: true });
+  });
+
+  test('install.sh and bin/install.js produce byte-identical template files across all harnesses', () => {
+    execFileSync('bash', [INSTALL_SH, '--local', shDir, '--all'], { encoding: 'utf8' });
+    execFileSync('node', [BIN_INSTALL_JS, '--local', nodeDir, '--all'], { encoding: 'utf8' });
+
+    const filesToCheck = [
+      'plugin.json',
+      'rules/AGENTS.md',
+      'skills/grill-plan-team/SKILL.md',
+      '.claude/skills/grill-plan-team/SKILL.md',
+      '.claude/commands/grill-plan-team.md',
+      '.cursor/rules/grill-plan-team.mdc',
+      '.cursorrules',
+      '.windsurfrules',
+      '.roomodes',
+      '.clinerules'
+    ];
+
+    for (const relPath of filesToCheck) {
+      const shContent = fs.readFileSync(path.join(shDir, relPath));
+      const nodeContent = fs.readFileSync(path.join(nodeDir, relPath));
+      assert.strictEqual(
+        shContent.compare(nodeContent),
+        0,
+        `Byte mismatch found in installed file: ${relPath}`
+      );
+    }
+  });
+
+  test('install.sh and bin/install.js produce matching manifest structures', () => {
+    execFileSync('bash', [INSTALL_SH, '--local', shDir, '--all'], { encoding: 'utf8' });
+    execFileSync('node', [BIN_INSTALL_JS, '--local', nodeDir, '--all'], { encoding: 'utf8' });
+
+    const shManifest = JSON.parse(fs.readFileSync(path.join(shDir, '.grill-plan-team-manifest.json'), 'utf8'));
+    const nodeManifest = JSON.parse(fs.readFileSync(path.join(nodeDir, '.grill-plan-team-manifest.json'), 'utf8'));
+
+    assert.strictEqual(shManifest.version, nodeManifest.version);
+    assert.deepStrictEqual(shManifest.harnesses.sort(), nodeManifest.harnesses.sort());
+    assert.strictEqual(shManifest.installedFiles.length, nodeManifest.installedFiles.length);
+  });
+});
+

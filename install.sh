@@ -128,6 +128,25 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Normalize and validate requested harnesses if specified
+VALID_REQUESTED_HARNESSES=()
+if [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
+  for h in "${REQUESTED_HARNESSES[@]}"; do
+    case "$h" in
+      antigravity|gemini|agy) VALID_REQUESTED_HARNESSES+=("antigravity") ;;
+      claude|claude-code) VALID_REQUESTED_HARNESSES+=("claude") ;;
+      cursor) VALID_REQUESTED_HARNESSES+=("cursor") ;;
+      windsurf) VALID_REQUESTED_HARNESSES+=("windsurf") ;;
+      roo|cline|roo-code) VALID_REQUESTED_HARNESSES+=("roo") ;;
+      *) echo "Warning: Unknown harness '$h' ignored." >&2 ;;
+    esac
+  done
+  if [ ${#VALID_REQUESTED_HARNESSES[@]} -eq 0 ]; then
+    echo "Error: No valid harnesses specified. Choose from: antigravity, claude, cursor, windsurf, roo" >&2
+    exit 1
+  fi
+fi
+
 # Detection functions
 has_antigravity() {
   [ -d "$HOME/.gemini" ] || command -v agy >/dev/null 2>&1 || command -v gemini >/dev/null 2>&1
@@ -267,22 +286,177 @@ EOF
   echo "[plugins.json] Registered grill-plan-team in $plugins_file"
 }
 
+update_manifest_on_uninstall() {
+  local manifest_path="$1"
+  shift
+  local uninstalled_harnesses=("$@")
+
+  if [ "$DRY_RUN" -eq 1 ] || [ ! -f "$manifest_path" ]; then
+    return
+  fi
+
+  if command -v node >/dev/null 2>&1; then
+    local harnesses_json
+    local files_json
+    harnesses_json="$(node -e 'console.log(JSON.stringify(process.argv.slice(1)))' "${uninstalled_harnesses[@]}")"
+    files_json="$(node -e 'console.log(JSON.stringify(process.argv.slice(1)))' "${UNINSTALL_FILES[@]}")"
+    node -e '
+      const fs = require("fs");
+      const mPath = process.argv[1];
+      const uninstalledHarnesses = JSON.parse(process.argv[2]);
+      const removedFiles = new Set(JSON.parse(process.argv[3]));
+      try {
+        const manifest = JSON.parse(fs.readFileSync(mPath, "utf8"));
+        const remainingHarnesses = (manifest.harnesses || []).filter(h => !uninstalledHarnesses.includes(h));
+        const remainingFiles = (manifest.installedFiles || []).filter(f => !removedFiles.has(f));
+        if (remainingHarnesses.length === 0 || remainingFiles.length === 0) {
+          fs.unlinkSync(mPath);
+        } else {
+          manifest.installedFiles = remainingFiles;
+          manifest.harnesses = remainingHarnesses;
+          manifest.updatedAt = new Date().toISOString();
+          fs.writeFileSync(mPath, JSON.stringify(manifest, null, 2) + "\n");
+        }
+      } catch {
+        try { fs.unlinkSync(mPath); } catch {}
+      }
+    ' "$manifest_path" "$harnesses_json" "$files_json"
+  else
+    if [ ${#VALID_REQUESTED_HARNESSES[@]} -eq 0 ]; then
+      rm -f "$manifest_path"
+    else
+      local rem_harnesses=()
+      local rem_files=()
+      for eh in antigravity claude cursor windsurf roo; do
+        if grep -q "\"$eh\"" "$manifest_path"; then
+          local keep=1
+          for uh in "${uninstalled_harnesses[@]}"; do
+            if [ "$eh" = "$uh" ]; then keep=0; break; fi
+          done
+          if [ "$keep" -eq 1 ]; then rem_harnesses+=("$eh"); fi
+        fi
+      done
+      while IFS= read -r f; do
+        if [ -n "$f" ]; then
+          local keep=1
+          for rf in "${UNINSTALL_FILES[@]}"; do
+            if [ "$f" = "$rf" ]; then keep=0; break; fi
+          done
+          if [ "$keep" -eq 1 ]; then rem_files+=("$f"); fi
+        fi
+      done < <(grep -o '"/[^"]*"' "$manifest_path" | tr -d '"')
+
+      if [ ${#rem_harnesses[@]} -eq 0 ] || [ ${#rem_files[@]} -eq 0 ]; then
+        rm -f "$manifest_path"
+      else
+        local files_str
+        local harnesses_str
+        files_str="$(printf '    "%s",\n' "${rem_files[@]}" | sed '$ s/,$//')"
+        harnesses_str="$(printf '    "%s",\n' "${rem_harnesses[@]}" | sed '$ s/,$//')"
+        cat > "$manifest_path" << EOF
+{
+  "installedFiles": [
+$files_str
+  ],
+  "harnesses": [
+$harnesses_str
+  ],
+  "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "version": "1.0.0"
+}
+EOF
+      fi
+    fi
+  fi
+}
+
+save_installation_manifest() {
+  local manifest_path="$1"
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    return
+  fi
+
+  if command -v node >/dev/null 2>&1; then
+    local new_files_json
+    local new_harnesses_json
+    new_files_json="$(node -e 'console.log(JSON.stringify(process.argv.slice(1)))' "${INSTALLED_FILES[@]}")"
+    new_harnesses_json="$(node -e 'console.log(JSON.stringify(process.argv.slice(1)))' "${SELECTED_HARNESSES[@]}")"
+    node -e '
+      const fs = require("fs");
+      const mPath = process.argv[1];
+      const newFiles = JSON.parse(process.argv[2]);
+      const newHarnesses = JSON.parse(process.argv[3]);
+      let manifest = { installedFiles: [], harnesses: [] };
+      if (fs.existsSync(mPath)) {
+        try {
+          manifest = JSON.parse(fs.readFileSync(mPath, "utf8"));
+          if (!Array.isArray(manifest.installedFiles)) manifest.installedFiles = [];
+          if (!Array.isArray(manifest.harnesses)) manifest.harnesses = [];
+        } catch {}
+      }
+      const filesSet = new Set([...manifest.installedFiles, ...newFiles]);
+      const harnessesSet = new Set([...manifest.harnesses, ...newHarnesses]);
+      manifest.installedFiles = Array.from(filesSet);
+      manifest.harnesses = Array.from(harnessesSet);
+      manifest.updatedAt = new Date().toISOString();
+      manifest.version = "1.0.0";
+      fs.writeFileSync(mPath, JSON.stringify(manifest, null, 2) + "\n");
+    ' "$manifest_path" "$new_files_json" "$new_harnesses_json"
+  else
+    local all_files=("${INSTALLED_FILES[@]}")
+    local all_harnesses=("${SELECTED_HARNESSES[@]}")
+    if [ -f "$manifest_path" ]; then
+      while IFS= read -r f; do
+        if [ -n "$f" ]; then
+          local already=0
+          for af in "${all_files[@]}"; do if [ "$af" = "$f" ]; then already=1; break; fi; done
+          if [ "$already" -eq 0 ]; then all_files+=("$f"); fi
+        fi
+      done < <(grep -o '"/[^"]*"' "$manifest_path" | tr -d '"')
+      for h in antigravity claude cursor windsurf roo; do
+        if grep -q "\"$h\"" "$manifest_path"; then
+          local already=0
+          for ah in "${all_harnesses[@]}"; do if [ "$ah" = "$h" ]; then already=1; break; fi; done
+          if [ "$already" -eq 0 ]; then all_harnesses+=("$h"); fi
+        fi
+      done
+    fi
+    local files_str
+    local harnesses_str
+    if [ ${#all_files[@]} -gt 0 ]; then
+      files_str="$(printf '    "%s",\n' "${all_files[@]}" | sed '$ s/,$//')"
+    else
+      files_str=""
+    fi
+    if [ ${#all_harnesses[@]} -gt 0 ]; then
+      harnesses_str="$(printf '    "%s",\n' "${all_harnesses[@]}" | sed '$ s/,$//')"
+    else
+      harnesses_str=""
+    fi
+
+    cat > "$manifest_path" << EOF
+{
+  "installedFiles": [
+$files_str
+  ],
+  "harnesses": [
+$harnesses_str
+  ],
+  "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "version": "1.0.0"
+}
+EOF
+  fi
+}
+
 MANIFEST_PATH="${TARGET_DIR}/${MANIFEST_FILE}"
 
 if [ "$DO_UNINSTALL" -eq 1 ]; then
   echo "=== Uninstalling grill-plan-team from ${TARGET_DIR} ==="
   declare -a UNINSTALL_HARNESSES=()
-  if [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
-    for h in "${REQUESTED_HARNESSES[@]}"; do
-      case "$h" in
-        antigravity|gemini|agy) UNINSTALL_HARNESSES+=("antigravity") ;;
-        claude|claude-code) UNINSTALL_HARNESSES+=("claude") ;;
-        cursor) UNINSTALL_HARNESSES+=("cursor") ;;
-        windsurf) UNINSTALL_HARNESSES+=("windsurf") ;;
-        roo|cline|roo-code) UNINSTALL_HARNESSES+=("roo") ;;
-        *) echo "Warning: Unknown harness '$h' ignored." >&2 ;;
-      esac
-    done
+  if [ ${#VALID_REQUESTED_HARNESSES[@]} -gt 0 ]; then
+    UNINSTALL_HARNESSES=("${VALID_REQUESTED_HARNESSES[@]}")
   else
     UNINSTALL_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
   fi
@@ -371,9 +545,7 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
       fi
     done
 
-    if [ ${#REQUESTED_HARNESSES[@]} -eq 0 ]; then
-      rm -f "$MANIFEST_PATH"
-    fi
+    update_manifest_on_uninstall "$MANIFEST_PATH" "${UNINSTALL_HARNESSES[@]}"
   fi
 
   echo "Uninstallation complete. Cleaned ${REMOVED_COUNT} file(s)."
@@ -391,17 +563,8 @@ if has_roo; then DETECTED+=("roo"); fi
 SELECTED_HARNESSES=()
 if [ "$ALL_HARNESSES" -eq 1 ]; then
   SELECTED_HARNESSES=("antigravity" "claude" "cursor" "windsurf" "roo")
-elif [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
-  for h in "${REQUESTED_HARNESSES[@]}"; do
-    case "$h" in
-      antigravity|gemini|agy) SELECTED_HARNESSES+=("antigravity") ;;
-      claude|claude-code) SELECTED_HARNESSES+=("claude") ;;
-      cursor) SELECTED_HARNESSES+=("cursor") ;;
-      windsurf) SELECTED_HARNESSES+=("windsurf") ;;
-      roo|cline|roo-code) SELECTED_HARNESSES+=("roo") ;;
-      *) echo "Warning: Unknown harness '$h' ignored." >&2 ;;
-    esac
-  done
+elif [ ${#VALID_REQUESTED_HARNESSES[@]} -gt 0 ]; then
+  SELECTED_HARNESSES=("${VALID_REQUESTED_HARNESSES[@]}")
 elif [ "$INTERACTIVE" -eq 1 ]; then
   if [ -t 0 ]; then
     echo "Detected harnesses: ${DETECTED[*]:-none}"
@@ -503,16 +666,7 @@ for h in "${SELECTED_HARNESSES[@]}"; do
 done
 
 # Save installation manifest
-if [ "$DRY_RUN" -eq 0 ]; then
-  cat > "$MANIFEST_PATH" << EOF
-{
-  "installedFiles": [$(printf '"%s",' "${INSTALLED_FILES[@]}" | sed 's/,$//')],
-  "harnesses": [$(printf '"%s",' "${SELECTED_HARNESSES[@]}" | sed 's/,$//')],
-  "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "version": "1.0.0"
-}
-EOF
-fi
+save_installation_manifest "$MANIFEST_PATH"
 
 echo ""
 echo "Installation successful!"

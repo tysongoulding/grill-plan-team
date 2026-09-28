@@ -82,6 +82,10 @@ function parseArgs(args) {
       }
       const parts = val.split(',').map(s => s.trim().toLowerCase());
       options.harnesses.push(...parts);
+    } else {
+      console.error(`Error: Unknown option: ${arg}`);
+      printHelp();
+      process.exit(1);
     }
     i++;
   }
@@ -413,6 +417,23 @@ async function run() {
     process.exit(0);
   }
 
+  // Validate requested harnesses if specified
+  if (options.harnesses.length > 0) {
+    const valid = [];
+    for (const h of options.harnesses) {
+      if (HARNESSES.includes(h)) {
+        valid.push(h);
+      } else {
+        console.warn(`Warning: Unknown harness '${h}' ignored.`);
+      }
+    }
+    if (valid.length === 0) {
+      console.error(`Error: No valid harnesses specified. Choose from: ${HARNESSES.join(', ')}`);
+      process.exit(1);
+    }
+    options.harnesses = valid;
+  }
+
   const baseDir = options.isGlobal ? os.homedir() : options.localPath;
   const manifestPath = path.join(baseDir, MANIFEST_FILENAME);
 
@@ -521,11 +542,7 @@ async function run() {
   if (options.all) {
     targetHarnesses = HARNESSES;
   } else if (options.harnesses.length > 0) {
-    targetHarnesses = options.harnesses.filter(h => HARNESSES.includes(h));
-    if (targetHarnesses.length === 0) {
-      console.error(`Error: No valid harnesses specified. Choose from: ${HARNESSES.join(', ')}`);
-      process.exit(1);
-    }
+    targetHarnesses = options.harnesses;
   } else if (options.interactive) {
     if (process.stdin.isTTY) {
       targetHarnesses = await promptHarnesses(detected);
