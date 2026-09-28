@@ -631,12 +631,18 @@ describe('Two-Tier Recursive Memory Engine', () => {
     }).trim();
     assert.strictEqual(projAliasPathRes, projPathRes);
 
-    // relative -l path resolution
+    // relative -l path resolution including .. dot-dot
     const relSubRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project', '-l', './subtest'], {
       encoding: 'utf8',
       cwd: tmpDir
     }).trim();
     assert.strictEqual(relSubRes, path.join(tmpDir, 'subtest', '.grill-plan-team', 'project-memory.md'));
+
+    const relDotDotRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--project', '-l', '../sibling'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(relDotDotRes, path.resolve(tmpDir, '..', 'sibling', '.grill-plan-team', 'project-memory.md'));
 
     // memory init --project
     const initProjRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project'], {
@@ -649,6 +655,22 @@ describe('Two-Tier Recursive Memory Engine', () => {
     const projContent = fs.readFileSync(projMemFile, 'utf8');
     assert.ok(projContent.includes('## Established Repository Conventions'));
     assert.ok(projContent.includes('## Architectural Decision History'));
+
+    // Test --force on memory init (preserves modified content without --force, overwrites with --force)
+    fs.appendFileSync(projMemFile, '\n- Custom project note 123');
+    const initAgainRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.ok(initAgainRes.includes('already exists'));
+    assert.ok(fs.readFileSync(projMemFile, 'utf8').includes('Custom project note 123'));
+
+    const initForceRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project', '--force'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.ok(initForceRes.includes('Initialized project memory'));
+    assert.ok(!fs.readFileSync(projMemFile, 'utf8').includes('Custom project note 123'));
 
     // memory show --project
     const showProjRes = execFileSync('node', [BIN_INSTALL_JS, 'memory', 'show', '--project'], {
@@ -683,6 +705,36 @@ describe('Two-Tier Recursive Memory Engine', () => {
         stdio: 'pipe'
       });
     });
+
+    // Directory collision handling (EISDIR avoidance) on show and init
+    const collisionDir = path.join(tmpDir, 'node-collision');
+    fs.mkdirSync(path.join(collisionDir, '.grill-plan-team', 'project-memory.md'), { recursive: true });
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, 'memory', 'show', '--project', '-l', collisionDir], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, 'memory', 'init', '--project', '-l', collisionDir], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+
+    // Unknown memory subcommand and unknown option rejection
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, 'memory', 'unknown_cmd'], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, 'memory', 'path', '--unknown-flag'], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
   });
 
   test('install.sh memory subcommands (path, init, show)', () => {
@@ -711,12 +763,18 @@ describe('Two-Tier Recursive Memory Engine', () => {
     }).trim();
     assert.strictEqual(projAliasPathRes, projPathRes);
 
-    // relative -l path resolution parity
+    // relative -l path resolution parity including .. dot-dot
     const relSubRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project', '-l', './subtest'], {
       encoding: 'utf8',
       cwd: tmpDir
     }).trim();
     assert.strictEqual(relSubRes, path.join(tmpDir, 'subtest', '.grill-plan-team', 'project-memory.md'));
+
+    const relDotDotRes = execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--project', '-l', '../sibling'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    }).trim();
+    assert.strictEqual(relDotDotRes, path.resolve(tmpDir, '..', 'sibling', '.grill-plan-team', 'project-memory.md'));
 
     // memory init --project
     const initProjRes = execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--project'], {
@@ -729,6 +787,22 @@ describe('Two-Tier Recursive Memory Engine', () => {
     const projContent = fs.readFileSync(projMemFile, 'utf8');
     assert.ok(projContent.includes('## Established Repository Conventions'));
     assert.ok(projContent.includes('## Architectural Decision History'));
+
+    // Test --force on memory init (preserves modified content without --force, overwrites with --force)
+    fs.appendFileSync(projMemFile, '\n- Custom project note 123');
+    const initAgainRes = execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--project'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.ok(initAgainRes.includes('already exists'));
+    assert.ok(fs.readFileSync(projMemFile, 'utf8').includes('Custom project note 123'));
+
+    const initForceRes = execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--project', '--force'], {
+      encoding: 'utf8',
+      cwd: tmpDir
+    });
+    assert.ok(initForceRes.includes('Initialized project memory'));
+    assert.ok(!fs.readFileSync(projMemFile, 'utf8').includes('Custom project note 123'));
 
     // memory show --project
     const showProjRes = execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--project'], {
@@ -764,6 +838,36 @@ describe('Two-Tier Recursive Memory Engine', () => {
 
     assert.throws(() => {
       execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--project', '-l', path.join(tmpDir, 'nonexistent')], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+
+    // Directory collision handling on show and init
+    const collisionDir = path.join(tmpDir, 'bash-collision');
+    fs.mkdirSync(path.join(collisionDir, '.grill-plan-team', 'project-memory.md'), { recursive: true });
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, 'memory', 'show', '--project', '-l', collisionDir], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, 'memory', 'init', '--project', '-l', collisionDir], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+
+    // Unknown memory subcommand and unknown option rejection
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, 'memory', 'unknown_cmd'], {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    });
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, 'memory', 'path', '--unknown-flag'], {
         encoding: 'utf8',
         stdio: 'pipe'
       });
@@ -818,10 +922,11 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(fs.readFileSync(userMem, 'utf8').includes('Custom user preference 123'));
 
     // Run uninstall with --purge
-    execFileSync('node', [BIN_INSTALL_JS, '--uninstall', '--purge'], {
+    const nodePurgeRes = execFileSync('node', [BIN_INSTALL_JS, '--uninstall', '--purge'], {
       encoding: 'utf8',
       env: getFakeEnv(fakeHome)
     });
+    assert.ok(nodePurgeRes.includes(`Purged: ${userMem}`), 'Node CLI logs Purged: <path>');
     assert.ok(!fs.existsSync(userMem), 'user-memory.md was removed during uninstall with --purge');
 
     // Repeat verification with install.sh
@@ -839,10 +944,11 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(fs.existsSync(userMem), 'user-memory.md was preserved by install.sh without --purge');
 
     // Uninstall with --purge
-    execFileSync('bash', [INSTALL_SH, '--uninstall', '--purge'], {
+    const bashPurgeRes = execFileSync('bash', [INSTALL_SH, '--uninstall', '--purge'], {
       encoding: 'utf8',
       env: getFakeEnv(fakeHome)
     });
+    assert.ok(bashPurgeRes.includes(`Purged: ${userMem}`), 'install.sh logs Purged: <path>');
     assert.ok(!fs.existsSync(userMem), 'user-memory.md was removed by install.sh with --purge');
   });
 
@@ -861,7 +967,8 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(fs.existsSync(projMem), 'Project memory preserved without --purge');
 
     // Uninstall with --purge (node)
-    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--uninstall', '--purge']);
+    const nodeProjPurgeRes = execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--uninstall', '--purge']);
+    assert.ok(nodeProjPurgeRes.includes(`Purged: ${projMem}`), 'Node CLI logs Purged: <project-path>');
     assert.ok(!fs.existsSync(projMem), 'Project memory removed with --purge');
 
     // Re-test with install.sh
@@ -876,7 +983,8 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(fs.existsSync(projMem), 'Project memory preserved by install.sh without --purge');
 
     // Uninstall with --purge (bash)
-    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--uninstall', '--purge']);
+    const bashProjPurgeRes = execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--uninstall', '--purge']);
+    assert.ok(bashProjPurgeRes.includes(`Purged: ${projMem}`), 'install.sh logs Purged: <project-path>');
     assert.ok(!fs.existsSync(projMem), 'Project memory removed by install.sh with --purge');
   });
 });

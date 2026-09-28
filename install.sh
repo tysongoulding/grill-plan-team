@@ -25,6 +25,38 @@ else
   REPO_DIR=""
 fi
 
+# Normalize path resolving . and .. without requiring directory to exist
+normalize_path() {
+  local p="${1:-}"
+  p="$(echo "$p" | xargs)"
+  if [ -z "$p" ] || [ "$p" = "." ]; then
+    pwd
+    return 0
+  fi
+  if [[ "$p" != /* ]]; then
+    p="$(pwd)/$p"
+  fi
+  local IFS="/"
+  read -ra parts <<< "$p"
+  local res=()
+  for part in "${parts[@]}"; do
+    if [ -z "$part" ] || [ "$part" = "." ]; then
+      continue
+    elif [ "$part" = ".." ]; then
+      if [ ${#res[@]} -gt 0 ]; then
+        unset "res[${#res[@]}-1]"
+      fi
+    else
+      res+=("$part")
+    fi
+  done
+  local out=""
+  for part in "${res[@]}"; do
+    out="${out}/${part}"
+  done
+  echo "${out:-/}"
+}
+
 # Fetch or read file content
 get_file_content() {
   local rel_path="$1"
@@ -135,11 +167,11 @@ EOF
 if [ "${1:-}" = "memory" ]; then
   shift
   subcmd="${1:-}"
-  if [ -n "$subcmd" ] && [[ "$subcmd" != -* ]]; then
-    shift
-  else
-    subcmd=""
+  if [ -z "$subcmd" ] || [ "$subcmd" = "--help" ] || [ "$subcmd" = "-h" ]; then
+    print_memory_help
+    exit 0
   fi
+  shift
   mem_target="user"
   mem_local_path=""
   mem_force=0
@@ -160,17 +192,7 @@ if [ "${1:-}" = "memory" ]; then
         ;;
       --local|-l)
         if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
-          raw_val="$(echo "$2" | xargs)"
-          raw_val="${raw_val%/}"
-          if [ -z "$raw_val" ] || [ "$raw_val" = "." ]; then
-            mem_local_path="$(pwd)"
-          elif [ -d "$raw_val" ]; then
-            mem_local_path="$(cd "$raw_val" 2>/dev/null && pwd)"
-          elif [[ "$raw_val" = /* ]]; then
-            mem_local_path="$raw_val"
-          else
-            mem_local_path="$(pwd)/${raw_val#./}"
-          fi
+          mem_local_path="$(normalize_path "$2")"
           shift 2
         else
           mem_local_path="$(pwd)"
@@ -179,17 +201,7 @@ if [ "${1:-}" = "memory" ]; then
         ;;
       --local=*|-l=*)
         raw_val="${1#*=}"
-        raw_target="$(echo "$raw_val" | xargs)"
-        raw_target="${raw_target%/}"
-        if [ -z "$raw_target" ] || [ "$raw_target" = "." ]; then
-          mem_local_path="$(pwd)"
-        elif [ -d "$raw_target" ]; then
-          mem_local_path="$(cd "$raw_target" 2>/dev/null && pwd)"
-        elif [[ "$raw_target" = /* ]]; then
-          mem_local_path="$raw_target"
-        else
-          mem_local_path="$(pwd)/${raw_target#./}"
-        fi
+        mem_local_path="$(normalize_path "$raw_val")"
         shift
         ;;
       --help|-h)
@@ -197,7 +209,7 @@ if [ "${1:-}" = "memory" ]; then
         exit 0
         ;;
       *)
-        echo "Error: Unknown memory option: $1" >&2
+        echo "Error: Unknown option for memory $subcmd: $1" >&2
         print_memory_help
         exit 1
         ;;
@@ -219,6 +231,10 @@ if [ "${1:-}" = "memory" ]; then
     init)
       if [ "$mem_target" = "project" ]; then
         target_file="${mem_base}/.grill-plan-team/project-memory.md"
+        if [ -d "$target_file" ]; then
+          echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
+          exit 1
+        fi
         if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
           echo "Project memory already exists at: $target_file"
         else
@@ -229,6 +245,10 @@ if [ "${1:-}" = "memory" ]; then
         fi
       else
         target_file="${XDG_CONFIG_HOME:-$mem_home/.config}/grill-plan-team/user-memory.md"
+        if [ -d "$target_file" ]; then
+          echo "Error: Cannot initialize memory because a directory exists at $target_file." >&2
+          exit 1
+        fi
         if [ -f "$target_file" ] && [ "$mem_force" -eq 0 ]; then
           echo "User memory already exists at: $target_file"
         else
@@ -251,10 +271,6 @@ if [ "${1:-}" = "memory" ]; then
         exit 1
       fi
       cat "$target_file"
-      exit 0
-      ;;
-    --help|-h|"")
-      print_memory_help
       exit 0
       ;;
     *)
@@ -314,13 +330,8 @@ while [ $# -gt 0 ]; do
     --local|-l)
       IS_GLOBAL=0
       if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
-        raw_target="$(echo "$2" | xargs)"
-        if [ -n "$raw_target" ]; then
-          mkdir -p "$raw_target" 2>/dev/null || true
-          TARGET_DIR="$(cd "$raw_target" 2>/dev/null && pwd || echo "$raw_target")"
-        else
-          TARGET_DIR="$(pwd)"
-        fi
+        TARGET_DIR="$(normalize_path "$2")"
+        mkdir -p "$TARGET_DIR" 2>/dev/null || true
         shift 2
       else
         TARGET_DIR="$(pwd)"
@@ -330,13 +341,8 @@ while [ $# -gt 0 ]; do
     --local=*|-l=*)
       IS_GLOBAL=0
       raw_val="${1#*=}"
-      raw_target="$(echo "$raw_val" | xargs)"
-      if [ -n "$raw_target" ]; then
-        mkdir -p "$raw_target" 2>/dev/null || true
-        TARGET_DIR="$(cd "$raw_target" 2>/dev/null && pwd || echo "$raw_target")"
-      else
-        TARGET_DIR="$(pwd)"
-      fi
+      TARGET_DIR="$(normalize_path "$raw_val")"
+      mkdir -p "$TARGET_DIR" 2>/dev/null || true
       shift
       ;;
     --all|-a)

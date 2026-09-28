@@ -136,7 +136,7 @@ Usage:
 Options:
   --user, -u          Target global user memory (~/.config/grill-plan-team/user-memory.md) (default)
   --project, -p       Target local project memory (.grill-plan-team/project-memory.md)
-  --local, -l <path>  Target specific project directory for --project
+  --local, -l [path]  Target specific project directory for --project
   --force, -f         Force overwrite of existing memory file on init
   --help, -h          Show this help message
 `);
@@ -199,6 +199,10 @@ function handleMemoryCommand(args) {
     case 'init': {
       if (target === 'project') {
         const memPath = getProjectMemoryPath(projDir);
+        if (fs.existsSync(memPath) && !fs.statSync(memPath).isFile()) {
+          console.error(`Error: Cannot initialize memory because a directory exists at ${memPath}.`);
+          process.exit(1);
+        }
         if (fs.existsSync(memPath) && !force) {
           console.log(`Project memory already exists at: ${memPath}`);
         } else {
@@ -207,6 +211,10 @@ function handleMemoryCommand(args) {
         }
       } else {
         const memPath = getUserMemoryPath(homeDir);
+        if (fs.existsSync(memPath) && !fs.statSync(memPath).isFile()) {
+          console.error(`Error: Cannot initialize memory because a directory exists at ${memPath}.`);
+          process.exit(1);
+        }
         if (fs.existsSync(memPath) && !force) {
           console.log(`User memory already exists at: ${memPath}`);
         } else {
@@ -219,7 +227,7 @@ function handleMemoryCommand(args) {
 
     case 'show': {
       const memPath = target === 'project' ? getProjectMemoryPath(projDir) : getUserMemoryPath(homeDir);
-      if (!fs.existsSync(memPath)) {
+      if (!fs.existsSync(memPath) || !fs.statSync(memPath).isFile()) {
         console.error(`Error: ${target === 'project' ? 'Project' : 'User'} memory file not found at ${memPath}.`);
         process.exit(1);
       }
@@ -767,10 +775,10 @@ async function run(cliArgs = process.argv.slice(2)) {
       if (options.purge) {
         if (options.isGlobal) {
           const userMem = getUserMemoryPath(baseDir);
-          if (fs.existsSync(userMem)) {
+          if (fs.existsSync(userMem) && fs.statSync(userMem).isFile()) {
             try {
               fs.unlinkSync(userMem);
-              console.log(`Purged user memory: ${userMem}`);
+              console.log(`Purged: ${userMem}`);
               const userDir = path.dirname(userMem);
               if (fs.existsSync(userDir) && fs.readdirSync(userDir).length === 0) {
                 fs.rmdirSync(userDir);
@@ -781,10 +789,10 @@ async function run(cliArgs = process.argv.slice(2)) {
           }
         } else {
           const projMem = getProjectMemoryPath(baseDir);
-          if (fs.existsSync(projMem)) {
+          if (fs.existsSync(projMem) && fs.statSync(projMem).isFile()) {
             try {
               fs.unlinkSync(projMem);
-              console.log(`Purged project memory: ${projMem}`);
+              console.log(`Purged: ${projMem}`);
               const projDir = path.dirname(projMem);
               if (fs.existsSync(projDir) && fs.readdirSync(projDir).length === 0) {
                 fs.rmdirSync(projDir);
@@ -799,7 +807,7 @@ async function run(cliArgs = process.argv.slice(2)) {
       }
     } else if (options.purge) {
       const memToPurge = options.isGlobal ? getUserMemoryPath(baseDir) : getProjectMemoryPath(baseDir);
-      if (fs.existsSync(memToPurge)) {
+      if (fs.existsSync(memToPurge) && fs.statSync(memToPurge).isFile()) {
         console.log(`[dry-run] Would purge: ${memToPurge}`);
       }
     }
