@@ -119,6 +119,10 @@ Baseline assessment of developer role, daily work, AI experience level, and pref
 - Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
 - Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
 
+## Activation & Trigger Preference
+- Trigger mode: Automatic (LLM determines when to invoke on non-trivial features/architectural changes).
+- Fallback: Can always be explicitly invoked with `/grill-plan-team` or chat prompt.
+
 ## Collaboration & Communication Style
 - Preferred interaction cadence: Direct, concise, technical rationale first.
 - Decision format: Present structured multiple-choice recommendations with explicit trade-offs and citations.
@@ -226,6 +230,91 @@ if [ "${1:-}" = "assess" ]; then
   else
     out_dir="${xdg_conf}/grill-plan-team"
   fi
+
+  if [ -t 0 ]; then
+    echo "=== Grill-Plan-Team Baseline Assessment ==="
+    echo ""
+    read -r -p "Where should preferences be saved? [1] User global (~/.config/grill-plan-team) [2] Project local (.grill-plan-team) [Default: 1]: " scope_ans
+    if [ "$scope_ans" = "2" ]; then
+      assess_target="project"
+      out_dir="${a_base}/.grill-plan-team"
+    fi
+    read -r -p "Developer role and daily focus [Default: Software Engineer / Architect]: " role_ans
+    role_ans="${role_ans:-Software Engineer / Architect}"
+    read -r -p "Experience level with AI coding (Beginner / Intermediate / Advanced / Power User) [Default: Power User]: " ai_ans
+    ai_ans="${ai_ans:-Power User}"
+    read -r -p "Trigger mode: [1] Automatic (LLM decides when to invoke) [2] Explicit only (only run when requested) [Default: 1]: " trigger_ans
+    if [ "$trigger_ans" = "2" ]; then
+      trigger_mode="Explicit only (only run when explicitly invoked)"
+    else
+      trigger_mode="Automatic (LLM determines when to invoke on non-trivial features/architectural changes)"
+    fi
+    read -r -p "Key guardrails & constraints [Default: Zero runtime dependencies, non-breaking changes, test integrity]: " guard_ans
+    guard_ans="${guard_ans:-Zero runtime dependencies, non-breaking changes, test integrity}"
+    read -r -p "Preferred VCS tool & remote workflow [Default: GitHub CLI gh and standard git]: " vcs_ans
+    vcs_ans="${vcs_ans:-GitHub CLI gh and standard git}"
+    read -r -p "Preferred languages and test runner [Default: TypeScript, Node.js LTS, native node:test]: " lang_ans
+    lang_ans="${lang_ans:-TypeScript, Node.js LTS, native node:test}"
+
+    mkdir -p "$out_dir"
+    cat > "$out_dir/ASSESSMENT.md" << EOF
+# Developer Assessment & Baseline Profile (grill-plan-team)
+
+Baseline assessment of developer role, daily work, AI experience level, and preferred collaboration style.
+
+## Developer Role & Daily Work
+- Primary role: ${role_ans}.
+- Daily responsibilities: Full-stack system development, modular architecture, and autonomous workflow design.
+
+## AI Experience & Proficiency
+- AI proficiency level: ${ai_ans}.
+- Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
+- Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
+
+## Activation & Trigger Preference
+- Trigger mode: ${trigger_mode}.
+- Fallback: Can always be explicitly invoked with \`/grill-plan-team\` or chat prompt.
+
+## Collaboration & Communication Style
+- Preferred interaction cadence: Direct, concise, technical rationale first.
+- Decision format: Present structured multiple-choice recommendations with explicit trade-offs and citations.
+
+## Distilled User Preferences
+- Learned interaction habits: Prefers automated verification prior to certification.
+EOF
+
+    cat > "$out_dir/REQUIREMENTS.md" << EOF
+# Engineering Requirements & Technical Guardrails (grill-plan-team)
+
+Technical guardrails, VCS workflows, language and library preferences, architectural records, and reviewer lessons.
+
+## Guardrails & Safety
+- Guardrails: ${guard_ans}.
+- Test integrity: Never bypass, weaken, skip, or mock tests to achieve a passing state.
+
+## VCS & Repository Processes
+- Preferred VCS tool: ${vcs_ans}.
+- Remote providers: GitHub (primary), GitLab, Bitbucket.
+- Branching & commits: Clean commit messages following conventional commits; local verification before push.
+
+## Preferred Languages & Runtimes
+- Primary languages & runtimes: ${lang_ans}.
+- Typing: Strict TypeScript compilation with noEmit type checking where applicable.
+
+## Architectural Decision History
+- [Initial Baseline]: Established baseline developer requirements.
+
+## Past Pitfalls & Reviewer Lessons
+- Verification first: Run objective programmatic tests before completing tasks.
+EOF
+
+    echo ""
+    echo "Baseline assessment saved successfully!"
+    echo "- $out_dir/ASSESSMENT.md"
+    echo "- $out_dir/REQUIREMENTS.md"
+    exit 0
+  fi
+
   mkdir -p "$out_dir"
   assess_content="$(get_memory_template "assessment")"
   req_content="$(get_memory_template "requirements")"

@@ -14,11 +14,11 @@ Initiates the gated development workflow with two-tier recursive memory for the 
 When the user runs `/grill-plan-team $ARGUMENTS`:
 
 0. **Step 0: Memory Recall**:
-   - Ingest developer assessment from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
+   - Ingest developer assessment (including trigger mode) from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
    - Ingest requirements & guardrails from `.grill-plan-team/REQUIREMENTS.md` or `~/.config/grill-plan-team/REQUIREMENTS.md`.
 
 1. **Phase 1: Adaptive Alignment (Grill-Me)**:
-   - **Baseline Onboarding**: If baseline documents are missing or if the user requests a reset (`re-assess`, `update preferences`), prompt for scope (User Global vs Project Local), role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
+   - **Baseline Onboarding**: If baseline documents are missing or if the user requests a reset (`re-assess`, `update preferences`), prompt for scope (User Global vs Project Local), trigger mode (Automatic vs Explicit only), role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
    - Identify the primary technical domains and uncertainties of `$ARGUMENTS`.
    - Skip trivial questions already resolved in memory.
    - Explore existing codebase patterns, configurations, and dependencies.

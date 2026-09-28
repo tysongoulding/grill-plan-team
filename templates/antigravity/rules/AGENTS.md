@@ -16,12 +16,13 @@ flowchart LR
 
 ### 0. Step 0: Memory Recall (Pre-Flight Context)
 - **Goal**: Ingest user and project context before any interview questions are asked.
-- **Rule 1 — Developer Assessment**: Read `.grill-plan-team/ASSESSMENT.md` (Project Local) or `~/.config/grill-plan-team/ASSESSMENT.md` (User Global) for developer persona, job role, AI experience level, and collaboration preferences.
+- **Rule 1 — Developer Assessment**: Read `.grill-plan-team/ASSESSMENT.md` (Project Local) or `~/.config/grill-plan-team/ASSESSMENT.md` (User Global) for developer persona, job role, AI experience level, activation mode (Automatic vs Explicit only), and collaboration preferences.
 - **Rule 2 — Requirements & Guardrails**: Read `.grill-plan-team/REQUIREMENTS.md` (Project Local) or `~/.config/grill-plan-team/REQUIREMENTS.md` (User Global) for technical guardrails, VCS workflows (`gh`, `git`, GitLab, Bitbucket), stack preferences, past ADRs, and reviewer lessons.
+- **Rule 3 — Activation Governance**: If Trigger mode is `Explicit only`, only run when explicitly invoked via `/grill-plan-team` or requested in chat. If `Automatic`, auto-trigger for non-trivial features, refactors, or architectural changes.
 
 ### 1. Phase 1: Interactive Alignment (Grill-Me)
 - **Goal**: Resolve all technical, UX, and architectural decisions before writing any code or plans.
-- **Rule 0 — Baseline Assessment Onboarding**: If baseline documents are missing or if the user requests a reset (`re-assess`, `update preferences`), prompt for scope choice (User Global vs Project Local), developer role & AI experience, and guardrails/VCS/stack rules, then initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
+- **Rule 0 — Baseline Assessment Onboarding**: If baseline documents are missing or if the user requests a reset (`re-assess`, `update preferences`), prompt for scope choice (User Global vs Project Local), trigger mode (Automatic vs Explicit only), developer role & AI experience, and guardrails/VCS/stack rules, then initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
 - **Rule 1 — Adaptive Memory Recall**: Skip trivial questions already resolved by memory.
 - **Rule 2 — One Question at a Time**: Use interactive questions (`ask_question` tool where available, or focused multiple-choice prompts) to present clear, structured options. Keep options concise. Never overwhelm the user with lists of unstructured questions.
 - **Rule 3 — Explore Codebase First**: Search existing code, configs, patterns, and dependencies before asking. Adopt repository conventions instead of asking obvious questions.

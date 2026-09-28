@@ -11,11 +11,12 @@ flowchart LR
 ```
 
 ## Step 0: Memory Recall (Two-Tier Retrieval)
-- Load developer assessment from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
+- Load developer assessment (including trigger mode) from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
 - Load requirements and guardrails from `.grill-plan-team/REQUIREMENTS.md` or `~/.config/grill-plan-team/REQUIREMENTS.md`.
+- **Activation Governance**: If trigger mode is `Explicit only`, only run when explicitly invoked. If `Automatic`, auto-trigger for non-trivial features/refactors.
 
 ## Phase 1: Interactive Alignment (Grill-Me)
-1. **Baseline Onboarding**: If baseline files are missing or user requests `re-assess`, prompt for scope (User vs Project), role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
+1. **Baseline Onboarding**: If baseline files are missing or user requests `re-assess`, prompt for scope (User vs Project), trigger mode (Automatic vs Explicit only), role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
 2. **Explore First**: Check files, dependencies, and git history before asking questions.
 3. **Adaptive Recall**: Skip trivial questions answered by persistent memory.
 4. **One Question at a Time**: Provide structured multiple-choice options with one clearly labeled `(Recommended)` option containing an engineering rationale, citing memory when applicable. Keep options concise.

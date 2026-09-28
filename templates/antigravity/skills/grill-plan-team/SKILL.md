@@ -28,11 +28,15 @@ flowchart LR
 Before initiating Phase 1, inspect and ingest persistent memory documents into context:
 1. **Developer Assessment Document (`ASSESSMENT.md`)**:
    - Location: `.grill-plan-team/ASSESSMENT.md` (Project Local) or `~/.config/grill-plan-team/ASSESSMENT.md` (User Global).
-   - Ingests: Developer persona, job role, daily tasks, AI experience level, and preferred collaboration style.
+   - Ingests: Developer persona, job role, daily tasks, AI experience level, **activation & trigger mode (Automatic vs Explicit only)**, and preferred collaboration style.
 2. **Requirements & Guardrails Document (`REQUIREMENTS.md`)**:
    - Location: `.grill-plan-team/REQUIREMENTS.md` (Project Local) or `~/.config/grill-plan-team/REQUIREMENTS.md` (User Global).
    - Ingests: Technical guardrails, safety policies, VCS workflows (`git`, `gh` CLI, GitLab, Bitbucket), preferred languages and libraries, architectural decision records (ADRs), and reviewer pitfall lessons.
-3. **Hierarchy & Auto-Migration**:
+3. **Activation Governance**:
+   - Check `## Activation & Trigger Preference` in `ASSESSMENT.md`:
+     - **Automatic (Default)**: Automatically activate the grill-plan-team workflow whenever the user requests a non-trivial feature, refactor, or architecture change.
+     - **Explicit only**: Only activate when the user explicitly invokes `/grill-plan-team` or requests the workflow by name.
+4. **Hierarchy & Auto-Migration**:
    - Project-level files take precedence over global user-level files.
    - If legacy `user-memory.md` or `project-memory.md` files exist without the new documents, automatically migrate their contents into `ASSESSMENT.md` and `REQUIREMENTS.md`.
 
@@ -46,12 +50,15 @@ Conduct a targeted, adaptive interview with the user to explore and resolve all 
 
 #### 1. Baseline Assessment Onboarding (First-Run & Rerun Trigger)
 - **First-Run Detection**: If neither `ASSESSMENT.md` nor `REQUIREMENTS.md` exists (neither in local `.grill-plan-team/` nor in global `~/.config/grill-plan-team/`), or if the user requests a reset (`re-assess`, `update preferences`, `rerun assessment`):
-  - Conduct a short 3-question baseline assessment before addressing the immediate task:
+  - Conduct a short 4-question baseline assessment before addressing the immediate task:
     1. **Storage Scope Choice**: Ask where they want to store their baseline preferences:
        - `(Recommended) User Global Scope (~/.config/grill-plan-team/)` — machine-wide defaults for all projects.
        - `Project Local Scope (.grill-plan-team/)` — repository-specific settings for this codebase.
-    2. **Developer Assessment**: Ask for their job role/daily focus and their experience level with AI (Beginner, Intermediate, Advanced, Power User).
-    3. **Requirements & Guardrails**: Ask for their guardrails (e.g. zero runtime deps, test protection), VCS workflow (`gh`, `git`, GitLab, Bitbucket), and preferred languages/libraries.
+    2. **Trigger Mode**: Ask how the skill should be invoked:
+       - `(Recommended) Automatic` — LLM determines when to invoke on non-trivial features or architectural changes.
+       - `Explicit only` — only run when explicitly invoked with `/grill-plan-team` or chat prompt.
+    3. **Developer Assessment**: Ask for their job role/daily focus and their experience level with AI (Beginner, Intermediate, Advanced, Power User).
+    4. **Requirements & Guardrails**: Ask for their guardrails (e.g. zero runtime deps, test protection), VCS workflow (`gh`, `git`, GitLab, Bitbucket), and preferred languages/libraries.
   - Immediately save the baseline files (`ASSESSMENT.md` and `REQUIREMENTS.md`) to the selected location and proceed with the task.
 - **Subsequent Runs**: Skip baseline questions automatically and prime all decisions with established preferences.
 

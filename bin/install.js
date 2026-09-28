@@ -87,6 +87,10 @@ Baseline assessment of developer role, daily work, AI experience level, and pref
 - Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
 - Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
 
+## Activation & Trigger Preference
+- Trigger mode: Automatic (LLM determines when to invoke on non-trivial features/architectural changes).
+- Fallback: Can always be explicitly invoked with \`/grill-plan-team\` or chat prompt.
+
 ## Collaboration & Communication Style
 - Preferred interaction cadence: Direct, concise, technical rationale first.
 - Decision format: Present structured multiple-choice recommendations with explicit trade-offs and citations.
@@ -355,6 +359,8 @@ async function handleAssessCommand(args = []) {
 
   const role = (await question('Developer role and daily focus [Default: Software Engineer / Architect]: ')).trim() || 'Software Engineer / Architect';
   const aiExp = (await question('Experience level with AI coding (Beginner / Intermediate / Advanced / Power User) [Default: Power User]: ')).trim() || 'Power User';
+  const triggerAns = (await question('Trigger mode: [1] Automatic (LLM decides when to invoke on non-trivial tasks) [2] Explicit only (only run when explicitly requested) [Default: 1]: ')).trim();
+  const triggerMode = triggerAns === '2' ? 'Explicit only (only run when explicitly invoked)' : 'Automatic (LLM determines when to invoke on non-trivial features/architectural changes)';
   const guardrails = (await question('Key guardrails & constraints [Default: Zero runtime dependencies, non-breaking changes, test integrity]: ')).trim() || 'Zero runtime dependencies, non-breaking changes, test integrity';
   const vcs = (await question('Preferred VCS tool & remote workflow [Default: GitHub CLI gh and standard git]: ')).trim() || 'GitHub CLI gh and standard git';
   const languages = (await question('Preferred languages and test runner [Default: TypeScript, Node.js LTS, native node:test]: ')).trim() || 'TypeScript, Node.js LTS, native node:test';
@@ -373,6 +379,10 @@ Baseline assessment of developer role, daily work, AI experience level, and pref
 - AI proficiency level: ${aiExp}.
 - Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
 - Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
+
+## Activation & Trigger Preference
+- Trigger mode: ${triggerMode}.
+- Fallback: Can always be explicitly invoked with \`/grill-plan-team\` or chat prompt.
 
 ## Collaboration & Communication Style
 - Preferred interaction cadence: Direct, concise, technical rationale first.

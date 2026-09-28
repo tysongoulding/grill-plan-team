@@ -3,11 +3,12 @@
 Always follow the **Step 0 Recall $\to$ Grill-Me $\to$ Plan $\to$ Teamwork $\to$ Distill** workflow with two-tier recursive memory for all non-trivial tasks, features, and refactors. Do not skip or blend phases.
 
 ## Step 0: Memory Recall (Two-Tier Retrieval)
-- Ingest developer assessment from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
+- Ingest developer assessment (including trigger mode) from `.grill-plan-team/ASSESSMENT.md` or `~/.config/grill-plan-team/ASSESSMENT.md`.
 - Ingest requirements & guardrails from `.grill-plan-team/REQUIREMENTS.md` or `~/.config/grill-plan-team/REQUIREMENTS.md`.
+- **Activation Governance**: If trigger mode is `Explicit only`, only run when explicitly requested. If `Automatic`, auto-trigger for non-trivial features/refactors.
 
 ## Phase 1: Interactive Alignment (Grill-Me)
-- **First-run Onboarding**: If baseline files are missing or user asks to `re-assess`, prompt for scope (User vs Project), developer role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
+- **First-run Onboarding**: If baseline files are missing or user asks to `re-assess`, prompt for scope (User vs Project), trigger mode (Automatic vs Explicit only), developer role & AI experience, and guardrails/VCS/stack to initialize `ASSESSMENT.md` and `REQUIREMENTS.md`.
 - Before writing code or plans, explore the codebase to understand existing patterns and conventions.
 - Skip trivial questions already answered by memory.
 - Ask questions **one at a time**. Provide structured multiple-choice options for decisions. Keep options concise.

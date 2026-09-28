@@ -12,6 +12,10 @@ Baseline assessment of developer role, daily work, AI experience level, and pref
 - Primary coding agent use cases: Automated refactoring, architecture design alignment, multi-agent swarm execution.
 - Guidance style: Provide clear architectural requirements and objective verification; avoid micromanaging low-level implementation details.
 
+## Activation & Trigger Preference
+- Trigger mode: Automatic (LLM determines when to invoke on non-trivial features/architectural changes).
+- Fallback: Can always be explicitly invoked with `/grill-plan-team` or chat prompt.
+
 ## Collaboration & Communication Style
 - Preferred interaction cadence: Direct, concise, technical rationale first.
 - Decision format: Present structured multiple-choice recommendations with explicit trade-offs and citations.

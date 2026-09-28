@@ -584,6 +584,7 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(assessContent.includes('# Developer Assessment & Baseline Profile (grill-plan-team)'));
     assert.ok(assessContent.includes('## Developer Role & Daily Work'));
     assert.ok(assessContent.includes('## AI Experience & Proficiency'));
+    assert.ok(assessContent.includes('## Activation & Trigger Preference'));
     assert.ok(assessContent.includes('## Collaboration & Communication Style'));
     assert.ok(assessContent.includes('## Distilled User Preferences'));
 
@@ -1247,6 +1248,8 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(nodeUserOut.includes('[assess] Baseline memory initialized'));
     assert.ok(fs.existsSync(path.join(fakeHome, '.config', 'grill-plan-team', 'ASSESSMENT.md')));
     assert.ok(fs.existsSync(path.join(fakeHome, '.config', 'grill-plan-team', 'REQUIREMENTS.md')));
+    const nodeAssessText = fs.readFileSync(path.join(fakeHome, '.config', 'grill-plan-team', 'ASSESSMENT.md'), 'utf8');
+    assert.ok(nodeAssessText.includes('## Activation & Trigger Preference'));
 
     // Node CLI assess --project
     const nodeProjOut = execFileSync('node', [BIN_INSTALL_JS, 'assess', '--project', '-l', tmpDir], {
@@ -1266,6 +1269,8 @@ describe('Two-Tier Recursive Memory Engine', () => {
     assert.ok(bashUserOut.includes('[assess] Baseline memory initialized'));
     assert.ok(fs.existsSync(path.join(fakeHome, '.config', 'grill-plan-team', 'ASSESSMENT.md')));
     assert.ok(fs.existsSync(path.join(fakeHome, '.config', 'grill-plan-team', 'REQUIREMENTS.md')));
+    const bashAssessText = fs.readFileSync(path.join(fakeHome, '.config', 'grill-plan-team', 'ASSESSMENT.md'), 'utf8');
+    assert.ok(bashAssessText.includes('## Activation & Trigger Preference'));
 
     // Bash CLI assess --project
     fs.rmSync(tmpDir, { recursive: true, force: true });
