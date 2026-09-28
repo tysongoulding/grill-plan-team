@@ -254,6 +254,28 @@ describe('Shell Installer (install.sh)', () => {
     assert.ok(!fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest removed');
     assert.strictEqual(fs.readdirSync(tmpDir).length, 0, 'Target directory clean after complete selective uninstall');
   });
+
+  test('install.sh normalizes harness names case-insensitively and trims whitespace', () => {
+    execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', '  CURSOR , CLAUDE  '], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor rules installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.claude', 'commands', 'grill-plan-team.md')), 'Claude command installed');
+  });
+
+  test('install.sh rejects empty or whitespace --harness argument with exit code 1', () => {
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', ''], { encoding: 'utf8', stdio: 'pipe' });
+    }, /--harness requires an argument/);
+
+    assert.throws(() => {
+      execFileSync('bash', [INSTALL_SH, '--local', tmpDir, '--harness', '   '], { encoding: 'utf8', stdio: 'pipe' });
+    }, /--harness requires an argument/);
+  });
+
+  test('install.sh supports -l=<path> syntax', () => {
+    const res = execFileSync('bash', [INSTALL_SH, `-l=${tmpDir}`, '-d'], { encoding: 'utf8' });
+    assert.ok(res.includes('[dry-run] Would write'));
+    assert.ok(res.includes(tmpDir));
+  });
 });
 
 describe('Node Installer CLI (bin/install.js)', () => {
@@ -427,6 +449,28 @@ describe('Node Installer CLI (bin/install.js)', () => {
 
     assert.ok(!fs.existsSync(path.join(tmpDir, '.grill-plan-team-manifest.json')), 'Manifest removed');
     assert.strictEqual(fs.readdirSync(tmpDir).length, 0, 'Target directory clean after complete selective uninstall');
+  });
+
+  test('bin/install.js normalizes harness names case-insensitively and trims whitespace', () => {
+    execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', '  CURSOR , CLAUDE  '], { encoding: 'utf8' });
+    assert.ok(fs.existsSync(path.join(tmpDir, '.cursorrules')), 'Cursor rules installed');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.claude', 'commands', 'grill-plan-team.md')), 'Claude command installed');
+  });
+
+  test('bin/install.js rejects empty or whitespace --harness argument with exit code 1', () => {
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', ''], { encoding: 'utf8', stdio: 'pipe' });
+    }, /--harness requires an argument/);
+
+    assert.throws(() => {
+      execFileSync('node', [BIN_INSTALL_JS, '--local', tmpDir, '--harness', '   '], { encoding: 'utf8', stdio: 'pipe' });
+    }, /--harness requires an argument/);
+  });
+
+  test('bin/install.js supports -l=<path> syntax', () => {
+    const res = execFileSync('node', [BIN_INSTALL_JS, `-l=${tmpDir}`, '-d'], { encoding: 'utf8' });
+    assert.ok(res.includes('[dry-run] Would write'));
+    assert.ok(res.includes(tmpDir));
   });
 });
 

@@ -66,18 +66,29 @@ while [ $# -gt 0 ]; do
     --local|-l)
       IS_GLOBAL=0
       if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
-        mkdir -p "$2" 2>/dev/null || true
-        TARGET_DIR="$(cd "$2" 2>/dev/null && pwd || echo "$2")"
+        raw_target="$(echo "$2" | xargs)"
+        if [ -n "$raw_target" ]; then
+          mkdir -p "$raw_target" 2>/dev/null || true
+          TARGET_DIR="$(cd "$raw_target" 2>/dev/null && pwd || echo "$raw_target")"
+        else
+          TARGET_DIR="$(pwd)"
+        fi
         shift 2
       else
         TARGET_DIR="$(pwd)"
         shift
       fi
       ;;
-    --local=*)
+    --local=*|-l=*)
       IS_GLOBAL=0
-      mkdir -p "${1#*=}" 2>/dev/null || true
-      TARGET_DIR="$(cd "${1#*=}" 2>/dev/null && pwd || echo "${1#*=}")"
+      raw_val="${1#*=}"
+      raw_target="$(echo "$raw_val" | xargs)"
+      if [ -n "$raw_target" ]; then
+        mkdir -p "$raw_target" 2>/dev/null || true
+        TARGET_DIR="$(cd "$raw_target" 2>/dev/null && pwd || echo "$raw_target")"
+      else
+        TARGET_DIR="$(pwd)"
+      fi
       shift
       ;;
     --all|-a)
@@ -98,9 +109,18 @@ while [ $# -gt 0 ]; do
       ;;
     --harness)
       if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
-        IFS=',' read -ra ADDR <<< "$2"
+        raw_val="$2"
+        trimmed_check="$(echo "$raw_val" | tr -d '[:space:]')"
+        if [ -z "$trimmed_check" ]; then
+          echo "Error: --harness requires an argument." >&2
+          exit 1
+        fi
+        IFS=',' read -ra ADDR <<< "$raw_val"
         for i in "${ADDR[@]}"; do
-          REQUESTED_HARNESSES+=("$i")
+          cleaned="$(echo "$i" | tr '[:upper:]' '[:lower:]' | xargs)"
+          if [ -n "$cleaned" ]; then
+            REQUESTED_HARNESSES+=("$cleaned")
+          fi
         done
         shift 2
       else
@@ -110,13 +130,17 @@ while [ $# -gt 0 ]; do
       ;;
     --harness=*)
       val="${1#*=}"
-      if [ -z "$val" ]; then
+      trimmed_check="$(echo "$val" | tr -d '[:space:]')"
+      if [ -z "$trimmed_check" ]; then
         echo "Error: --harness requires an argument." >&2
         exit 1
       fi
       IFS=',' read -ra ADDR <<< "$val"
       for i in "${ADDR[@]}"; do
-        REQUESTED_HARNESSES+=("$i")
+        cleaned="$(echo "$i" | tr '[:upper:]' '[:lower:]' | xargs)"
+        if [ -n "$cleaned" ]; then
+          REQUESTED_HARNESSES+=("$cleaned")
+        fi
       done
       shift
       ;;
@@ -128,16 +152,42 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Ensure TARGET_DIR is non-empty
+if [ -z "$TARGET_DIR" ]; then
+  TARGET_DIR="$(pwd)"
+fi
+
 # Normalize and validate requested harnesses if specified
 VALID_REQUESTED_HARNESSES=()
 if [ ${#REQUESTED_HARNESSES[@]} -gt 0 ]; then
   for h in "${REQUESTED_HARNESSES[@]}"; do
-    case "$h" in
-      antigravity|gemini|agy) VALID_REQUESTED_HARNESSES+=("antigravity") ;;
-      claude|claude-code) VALID_REQUESTED_HARNESSES+=("claude") ;;
-      cursor) VALID_REQUESTED_HARNESSES+=("cursor") ;;
-      windsurf) VALID_REQUESTED_HARNESSES+=("windsurf") ;;
-      roo|cline|roo-code) VALID_REQUESTED_HARNESSES+=("roo") ;;
+    cleaned_h="$(echo "$h" | tr '[:upper:]' '[:lower:]' | xargs)"
+    case "$cleaned_h" in
+      antigravity|gemini|agy)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " antigravity " ]]; then
+          VALID_REQUESTED_HARNESSES+=("antigravity")
+        fi
+        ;;
+      claude|claude-code)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " claude " ]]; then
+          VALID_REQUESTED_HARNESSES+=("claude")
+        fi
+        ;;
+      cursor)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " cursor " ]]; then
+          VALID_REQUESTED_HARNESSES+=("cursor")
+        fi
+        ;;
+      windsurf)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " windsurf " ]]; then
+          VALID_REQUESTED_HARNESSES+=("windsurf")
+        fi
+        ;;
+      roo|cline|roo-code)
+        if [[ ! " ${VALID_REQUESTED_HARNESSES[*]:-} " =~ " roo " ]]; then
+          VALID_REQUESTED_HARNESSES+=("roo")
+        fi
+        ;;
       *) echo "Warning: Unknown harness '$h' ignored." >&2 ;;
     esac
   done
@@ -527,8 +577,6 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then
     rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team/rules" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.gemini/config/plugins/grill-plan-team" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.gemini/config/skills/grill-plan-team" 2>/dev/null || true
-    rmdir "${TARGET_DIR}/.gemini/config/skills" 2>/dev/null || true
-    rmdir "${TARGET_DIR}/.gemini/config" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.claude/skills/grill-plan-team" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.claude/skills" 2>/dev/null || true
     rmdir "${TARGET_DIR}/.claude/commands" 2>/dev/null || true

@@ -48,15 +48,17 @@ function parseArgs(args) {
       options.localPath = null;
     } else if (arg === '--local' || arg === '-l') {
       options.isGlobal = false;
-      if (args[i + 1] && !args[i + 1].startsWith('-')) {
-        options.localPath = path.resolve(args[i + 1]);
+      if (args[i + 1] && !args[i + 1].startsWith('-') && args[i + 1].trim().length > 0) {
+        options.localPath = path.resolve(args[i + 1].trim());
         i++;
       } else {
         options.localPath = process.cwd();
       }
-    } else if (arg.startsWith('--local=')) {
+    } else if (arg.startsWith('--local=') || arg.startsWith('-l=')) {
       options.isGlobal = false;
-      options.localPath = path.resolve(arg.slice('--local='.length));
+      const prefix = arg.startsWith('--local=') ? '--local=' : '-l=';
+      const val = arg.slice(prefix.length).trim();
+      options.localPath = val ? path.resolve(val) : process.cwd();
     } else if (arg === '--all' || arg === '-a') {
       options.all = true;
     } else if (arg === '--uninstall' || arg === '-u') {
@@ -66,8 +68,12 @@ function parseArgs(args) {
     } else if (arg === '--interactive') {
       options.interactive = true;
     } else if (arg === '--harness') {
-      if (args[i + 1] && !args[i + 1].startsWith('-')) {
-        const parts = args[i + 1].split(',').map(s => s.trim().toLowerCase());
+      if (args[i + 1] && !args[i + 1].startsWith('-') && args[i + 1].trim().length > 0) {
+        const parts = args[i + 1].split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        if (parts.length === 0) {
+          console.error('Error: --harness requires an argument.');
+          process.exit(1);
+        }
         options.harnesses.push(...parts);
         i++;
       } else {
@@ -80,7 +86,11 @@ function parseArgs(args) {
         console.error('Error: --harness requires an argument.');
         process.exit(1);
       }
-      const parts = val.split(',').map(s => s.trim().toLowerCase());
+      const parts = val.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      if (parts.length === 0) {
+        console.error('Error: --harness requires an argument.');
+        process.exit(1);
+      }
       options.harnesses.push(...parts);
     } else {
       console.error(`Error: Unknown option: ${arg}`);
@@ -90,13 +100,14 @@ function parseArgs(args) {
     i++;
   }
 
-  // Normalize aliases
+  // Normalize aliases and deduplicate
   options.harnesses = options.harnesses.map(h => {
     if (h === 'agy' || h === 'gemini') return 'antigravity';
     if (h === 'claude-code') return 'claude';
     if (h === 'cline' || h === 'roo-code') return 'roo';
     return h;
   });
+  options.harnesses = Array.from(new Set(options.harnesses));
 
   return options;
 }
@@ -518,7 +529,7 @@ async function run() {
         // Selective uninstallation: update manifest tracking
         const remainingInstalled = (manifest.installedFiles || []).filter(f => !filesToRemove.has(f));
         const remainingHarnesses = (manifest.harnesses || []).filter(h => !targetHarnesses.includes(h));
-        if (remainingHarnesses.length === 0) {
+        if (remainingHarnesses.length === 0 || remainingInstalled.length === 0) {
           fs.unlinkSync(manifestPath);
         } else {
           manifest.installedFiles = remainingInstalled;
